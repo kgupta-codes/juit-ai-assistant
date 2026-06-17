@@ -18,10 +18,12 @@ collection = client.get_collection(
 )
 
 
-def search(query: str, n_results: int = 3):
+def search(query: str, n_results: int = 10):
+
     results = collection.query(
         query_texts=[query],
-        n_results=n_results
+        n_results=n_results,
+        include=["documents", "metadatas", "distances"]
     )
 
     return results
