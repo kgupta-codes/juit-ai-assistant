@@ -59,13 +59,13 @@ def scrape_page(url: str):
 
         # Try extracting main content
         main_content = (
-            soup.find("main")
+            soup.find("div", class_="bio-left")
+            or soup.find("main")
             or soup.find("article")
             or soup.find("section")
             or soup.find("div", class_="content")
             or soup.find("div", id="content")
         )
-
         if main_content:
             text = main_content.get_text(
                 separator=" ",

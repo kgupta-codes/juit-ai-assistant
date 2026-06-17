@@ -13,11 +13,16 @@ def generate_answer(prompt: str):
             "stream": False,
             "think": False
         },
-        timeout=120
+        timeout=60
     )
 
     response.raise_for_status()
 
     data = response.json()
 
-    return data["response"]
+    answer = data["response"]
+
+    if "</think>" in answer:
+        answer = answer.split("</think>")[-1].strip()
+
+    return answer

@@ -3,7 +3,6 @@ from pathlib import Path
 
 import chromadb
 from chromadb.utils import embedding_functions
-
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # -----------------------------
@@ -35,8 +34,8 @@ collection = client.get_or_create_collection(
 # -----------------------------
 
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200
+    chunk_size=1200,
+    chunk_overlap=100
 )
 
 # -----------------------------
@@ -52,6 +51,9 @@ def ingest_file(file_path: Path):
     url = data.get("url", "")
     content = data.get("content", "")
 
+    # Add title into content for better retrieval
+    content = f"{title}\n\n{content}"
+
     chunks = splitter.split_text(content)
 
     documents = []
@@ -60,9 +62,13 @@ def ingest_file(file_path: Path):
 
     for i, chunk in enumerate(chunks):
 
+        # Skip useless tiny chunks
+        if len(chunk.strip()) < 100:
+            continue
+
         chunk_id = f"{file_path.stem}_{i}"
 
-        documents.append(chunk)
+        documents.append(f"{title}\n\n{chunk}")
 
         ids.append(chunk_id)
 
@@ -74,13 +80,14 @@ def ingest_file(file_path: Path):
             }
         )
 
-    collection.add(
-        ids=ids,
-        documents=documents,
-        metadatas=metadatas
-    )
+    if documents:
+        collection.add(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas
+        )
 
-    print(f"[OK] {file_path.name} -> {len(chunks)} chunks")
+    print(f"[OK] {file_path.name} -> {len(documents)} chunks")
 
 
 def main():
