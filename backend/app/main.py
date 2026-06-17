@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from backend.app.retriever import search
+from backend.app.rag import ask_juit
 
 app = FastAPI(
     title="JUIT AI Assistant"
@@ -33,4 +34,16 @@ def search_documents(request: QueryRequest):
         "results_found": len(documents),
         "answers": documents,
         "sources": metadatas
+    }
+
+
+@app.post("/chat")
+def chat(request: QueryRequest):
+
+    result = ask_juit(request.query)
+
+    return {
+        "question": request.query,
+        "answer": result["answer"],
+        "sources": result["sources"]
     }
