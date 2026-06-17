@@ -11,7 +11,8 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / "data" / "pages"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-SEED_FILE = BASE_DIR / "data" / "seed_urls.txt"
+# Use discovered URLs instead of seed URLs
+SEED_FILE = BASE_DIR / "data" / "discovered_urls.txt"
 
 HEADERS = {
     "User-Agent": "JUIT-AI-Assistant/1.0"
@@ -27,12 +28,26 @@ def scrape_page(url: str):
             headers=HEADERS,
             timeout=20
         )
+
         response.raise_for_status()
 
-        soup = BeautifulSoup(response.text, "lxml")
+        # Skip non-HTML content
+        if "text/html" not in response.headers.get(
+            "Content-Type",
+            ""
+        ):
+            print(f"[SKIP] Not HTML: {url}")
+            return
+
+        soup = BeautifulSoup(
+            response.text,
+            "lxml"
+        )
 
         # Remove unwanted tags
-        for tag in soup(["script", "style", "noscript"]):
+        for tag in soup(
+            ["script", "style", "noscript"]
+        ):
             tag.decompose()
 
         # Page title
@@ -41,7 +56,8 @@ def scrape_page(url: str):
             if soup.title and soup.title.string
             else "Untitled"
         )
-        # Try to extract main content first
+
+        # Try extracting main content
         main_content = (
             soup.find("main")
             or soup.find("article")
@@ -60,9 +76,13 @@ def scrape_page(url: str):
                 separator=" ",
                 strip=True
             )
-        # Skip empty pages
-        if len(text) < 100:
-            print(f"[WARNING] Very little content found: {url}")
+
+        # Skip pages with little content
+        if len(text) < 300:
+            print(
+                f"[SKIP] Too little content: {url}"
+            )
+            return
 
         data = {
             "url": url,
@@ -81,7 +101,18 @@ def scrape_page(url: str):
 
         output_file = DATA_DIR / filename
 
-        with open(output_file, "w", encoding="utf-8") as f:
+        # Skip already scraped files
+        if output_file.exists():
+            print(
+                f"[SKIP] Already exists: {output_file.name}"
+            )
+            return
+
+        with open(
+            output_file,
+            "w",
+            encoding="utf-8"
+        ) as f:
             json.dump(
                 data,
                 f,
@@ -89,7 +120,9 @@ def scrape_page(url: str):
                 indent=2
             )
 
-        print(f"[OK] Saved -> {output_file.name}")
+        print(
+            f"[OK] Saved -> {output_file.name}"
+        )
 
     except requests.exceptions.RequestException as e:
         print(f"[REQUEST ERROR] {url}")
@@ -101,12 +134,18 @@ def scrape_page(url: str):
 
 
 def load_seed_urls():
+
     if not SEED_FILE.exists():
         raise FileNotFoundError(
             f"Seed file not found: {SEED_FILE}"
         )
 
-    with open(SEED_FILE, "r", encoding="utf-8") as f:
+    with open(
+        SEED_FILE,
+        "r",
+        encoding="utf-8"
+    ) as f:
+
         urls = [
             line.strip()
             for line in f
@@ -117,14 +156,19 @@ def load_seed_urls():
 
 
 def main():
+
     urls = load_seed_urls()
 
-    print(f"[INFO] Loaded {len(urls)} URLs")
+    print(
+        f"[INFO] Loaded {len(urls)} URLs"
+    )
 
     for url in urls:
         scrape_page(url)
 
-    print("\n[INFO] Scraping completed")
+    print(
+        "\n[INFO] Scraping completed"
+    )
 
 
 if __name__ == "__main__":

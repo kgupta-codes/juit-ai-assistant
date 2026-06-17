@@ -1,5 +1,5 @@
 from collections import deque
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -11,7 +11,22 @@ queue = deque([START_URL])
 
 discovered = set()
 
-MAX_PAGES = 100
+MAX_PAGES = 500
+
+SKIP_EXTENSIONS = (
+    ".pdf",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".zip",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+)
 
 while queue and len(visited) < MAX_PAGES:
 
@@ -25,34 +40,82 @@ while queue and len(visited) < MAX_PAGES:
     try:
         print(f"[CRAWL] {url}")
 
-        response = requests.get(url, timeout=15)
+        response = requests.get(
+            url,
+            timeout=15,
+            headers={
+                "User-Agent": "JUIT-AI-Assistant/1.0"
+            }
+        )
 
-        soup = BeautifulSoup(response.text, "lxml")
+        soup = BeautifulSoup(
+            response.text,
+            "lxml"
+        )
 
         for a in soup.find_all("a", href=True):
 
             href = a["href"]
 
-            absolute_url = urljoin(url, href)
+            absolute_url = urljoin(
+                url,
+                href
+            )
+
+            absolute_url = absolute_url.split("#")[0]
+
+            parsed = urlparse(
+                absolute_url
+            )
+
+            absolute_url = (
+                parsed.scheme
+                + "://"
+                + parsed.netloc
+                + parsed.path
+            )
 
             if not absolute_url.startswith(
                 "https://www.juit.ac.in"
             ):
                 continue
 
-            if (
-                "webportal" in absolute_url
-                or "webmail" in absolute_url
-                or "lms." in absolute_url
+            if absolute_url.endswith(
+                SKIP_EXTENSIONS
             ):
                 continue
 
-            if absolute_url not in visited:
+            if any(
+                x in absolute_url.lower()
+                for x in [
+                    "webmail",
+                    "webportal",
+                    "login",
+                    "logout",
+                    "facebook",
+                    "twitter",
+                    "instagram",
+                    "linkedin",
+                    "youtube",
+                ]
+            ):
+                continue
 
-                discovered.add(absolute_url)
-                queue.append(absolute_url)
+            if (
+                absolute_url
+                not in visited
+            ):
+                discovered.add(
+                    absolute_url
+                )
+                queue.append(
+                    absolute_url
+                )
 
     except Exception as e:
+        print(
+            f"[ERROR] {url}"
+        )
         print(e)
 
 with open(
