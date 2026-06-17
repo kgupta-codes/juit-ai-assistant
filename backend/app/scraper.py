@@ -41,10 +41,25 @@ def scrape_page(url: str):
             if soup.title and soup.title.string
             else "Untitled"
         )
+        # Try to extract main content first
+        main_content = (
+            soup.find("main")
+            or soup.find("article")
+            or soup.find("section")
+            or soup.find("div", class_="content")
+            or soup.find("div", id="content")
+        )
 
-        # Extract text
-        text = soup.get_text(separator=" ", strip=True)
-
+        if main_content:
+            text = main_content.get_text(
+                separator=" ",
+                strip=True
+            )
+        else:
+            text = soup.get_text(
+                separator=" ",
+                strip=True
+            )
         # Skip empty pages
         if len(text) < 100:
             print(f"[WARNING] Very little content found: {url}")
