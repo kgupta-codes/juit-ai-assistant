@@ -1,5 +1,6 @@
 import json
 import re
+import traceback
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
@@ -88,11 +89,15 @@ def remove_unwanted_elements(soup: BeautifulSoup) -> None:
         tag.decompose()
 
     for tag in soup.find_all(True):
+
+        if not hasattr(tag, "attrs") or tag.attrs is None:
+            continue
+
         marker = " ".join(
             [
-                tag.get("id", ""),
-                " ".join(tag.get("class", [])),
-                tag.get("role", ""),
+                str(tag.attrs.get("id", "")),
+                " ".join(tag.attrs.get("class", [])),
+                str(tag.attrs.get("role", "")),
             ]
         )
 
@@ -100,10 +105,10 @@ def remove_unwanted_elements(soup: BeautifulSoup) -> None:
             tag.decompose()
             continue
 
-        style = tag.get("style", "").replace(" ", "").lower()
+        style = str(tag.attrs.get("style", "")).replace(" ", "").lower()
+
         if "display:none" in style or "visibility:hidden" in style:
             tag.decompose()
-
 
 def normalize_title(title: str) -> str:
     title = clean_text(title)
@@ -251,9 +256,7 @@ def scrape_page(url: str):
 
     except Exception as e:
         print(f"[ERROR] {url}")
-        print(e)
-
-
+        traceback.print_exc()
 def load_seed_urls():
 
     if not SEED_FILE.exists():
