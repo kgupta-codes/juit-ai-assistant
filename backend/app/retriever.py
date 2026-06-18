@@ -37,6 +37,7 @@ STUDENT_CLUB_MARKERS = {
     "koshishclub",
     "coding society juit cse it",
     "ieee student branch",
+    "gender champions club",
 }
 
 RESEARCH_CENTER_MARKERS = {
@@ -49,6 +50,63 @@ RESEARCH_CENTER_MARKERS = {
     "biotechnology bioinformatics cestrd",
     "biotechnology bioinformatics cehti",
     "ride centre of excellence",
+    "center of excellence industry",
+    "center of excellence ldra",
+}
+
+CANONICAL_CLUB_PAGES = {
+    "juit-youth-club",
+    "nss-in-juit",
+    "nss",
+    "ncc",
+    "about-ncc",
+    "civil-engineering-cec",
+    "coding-society-juit-cse-it",
+    "ieee-student-branch",
+    "synapse-students-club",
+    "technical-club-cse-it",
+    "technovatorz-electronics-club",
+    "koshishclub",
+    "gender-champions-club",
+}
+
+CANONICAL_RESEARCH_CENTER_PAGES = {
+    "centre-of-excellence-in-structural-engineering-and-disaster-management",
+    "cesedm-about-the-centre",
+    "biotechnology-bioinformatics-cestrd",
+    "centre-for-climate-change-and-water-resources",
+    "cccwr-about-the-centre",
+    "biotechnology-bioinformatics-cehti",
+    "center-of-excellence-industry",
+    "center-of-excellence-ldra-cse-it",
+    "ride-centre-of-excellence",
+}
+
+CANONICAL_COMMITTEE_PAGES = {
+    "committees",
+    "sgrc",
+    "internal-complaint-committee",
+    "student-counselling-committee",
+    "ethics-committee",
+    "committee-caste-based-discrimination",
+    "nep-committee",
+    "ece-department-committees",
+    "website-committee",
+}
+
+DETAIL_PAGE_MARKERS = {
+    "events",
+    "past-events",
+    "pastevents",
+    "board",
+    "faculty-in-charge",
+    "staff",
+    "notices",
+    "announcements",
+    "meetings",
+    "objectives",
+    "visionmission",
+    "rolesandresponsibilities",
 }
 
 client = chromadb.PersistentClient(
@@ -269,6 +327,9 @@ def _committee_boost(query_tokens: set[str], title: str, document: str, metadata
     if page_type == "committee":
         boost += 1.0
 
+    if _is_canonical_url(metadata, CANONICAL_COMMITTEE_PAGES):
+        boost += 2.0
+
     if "committee" in document_text:
         boost += 0.4
 
@@ -281,6 +342,9 @@ def _committee_boost(query_tokens: set[str], title: str, document: str, metadata
     if page_type == "events":
         boost -= 0.7
 
+    if any(marker in _url_slug(metadata) for marker in DETAIL_PAGE_MARKERS):
+        boost -= 0.5
+
     return boost
 
 
@@ -291,6 +355,32 @@ def _metadata_text(metadata: dict) -> str:
             for key in ("title", "url", "canonical_url", "page_type")
         )
     )
+
+
+def _url_slug(metadata: dict) -> str:
+    url = str(metadata.get("canonical_url") or metadata.get("url") or "")
+    slug = url.rstrip("/").split("/")[-1]
+    return _normalize_text(slug).replace(" ", "-")
+
+
+def _is_canonical_url(metadata: dict, canonical_slugs: set[str]) -> bool:
+    return _url_slug(metadata) in canonical_slugs
+
+
+def is_student_club_query(query: str) -> bool:
+    return _is_student_club_query(_tokens(query))
+
+
+def is_research_center_query(query: str) -> bool:
+    return _is_research_center_query(_tokens(query))
+
+
+def is_committee_query(query: str) -> bool:
+    return bool(_tokens(query) & COMMITTEE_TERMS)
+
+
+def is_placement_query(query: str) -> bool:
+    return _is_placement_query(_tokens(query))
 
 
 def _is_fee_query(query_tokens: set[str]) -> bool:
@@ -374,6 +464,9 @@ def _research_center_boost(query_tokens: set[str], document: str, metadata: dict
     if any(marker in meta_text for marker in RESEARCH_CENTER_MARKERS):
         boost += 2.0
 
+    if _is_canonical_url(metadata, CANONICAL_RESEARCH_CENTER_PAGES):
+        boost += 2.4
+
     if "cccwr" in meta_text:
         boost += 2.0
 
@@ -399,6 +492,9 @@ def _research_center_boost(query_tokens: set[str], document: str, metadata: dict
     if metadata.get("page_type") == "events":
         boost -= 0.8
 
+    if any(marker in _url_slug(metadata) for marker in DETAIL_PAGE_MARKERS):
+        boost -= 0.6
+
     if any(phrase in meta_text for phrase in ("research domains", "research projects")):
         boost -= 0.9
 
@@ -416,6 +512,9 @@ def _student_club_boost(query_tokens: set[str], document: str, metadata: dict) -
 
     if any(marker in meta_text for marker in STUDENT_CLUB_MARKERS):
         boost += 2.2
+
+    if _is_canonical_url(metadata, CANONICAL_CLUB_PAGES):
+        boost += 2.4
 
     if "juit youth club" in meta_text:
         boost += 2.0
@@ -455,6 +554,9 @@ def _student_club_boost(query_tokens: set[str], document: str, metadata: dict) -
 
     if "cell" in meta_text and "club" not in combined:
         boost -= 0.8
+
+    if any(marker in _url_slug(metadata) for marker in DETAIL_PAGE_MARKERS):
+        boost -= 0.6
 
     return boost
 
