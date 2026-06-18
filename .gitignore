@@ -7,3 +7,5 @@ uploads/
 .env
 
 .DS_Store
+benchmark_report.md
+manual_test_results.md
