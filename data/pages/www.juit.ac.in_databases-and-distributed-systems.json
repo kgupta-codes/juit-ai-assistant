@@ -1,5 +1,5 @@
 {
   "url": "https://www.juit.ac.in/databases-and-distributed-systems",
-  "title": "Untitled",
+  "title": "Databases and Distributed Systems",
   "content": "Databases and Distributed Systems The database group at JUIT conducts research on all areas of database systems and distributed systems. Projects range from the design of new user interfaces and query languages to handling structured and unstructured data in data-intensive systems i.e. Big Data Analytics / Management. One of the objectives of this group is to spread application and research awareness among students and research scholars regarding the usefulness of database system technology by creating, extending, and applying database technology. At the Undergraduate level, this group offers courses like databases, Data Mining, Big Data Analytics, Distributed systems, Data Warehousing and Advanced Databases. Our current work is focused on building the data management infrastructure for the twenty-first century, with particular emphasis on issues surrounding the internet (including XML, text mining, database design, data integration, security), object-relational databases, mobile databases, on issues of data warehousing and data mining, and on the effective integration and efficient querying of big data."
 }

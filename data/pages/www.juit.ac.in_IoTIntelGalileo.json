@@ -1,5 +1,5 @@
 {
   "url": "https://www.juit.ac.in/IoTIntelGalileo",
-  "title": "Untitled",
+  "title": "IoT workshop with Intel Galileo: 26-27 April, 2015",
   "content": "IoT workshop with Intel Galileo: 26-27 April, 2015 Intel Galileo gen 2 Board The Arduino Intel Galileo board is a microcontroller board based on the Intel® Quark SoC X1000, a 32- bit Intel Pentium®-class system on a chip (SoC). It is the first board based on Intel® architecture designed to be fully pin-compatible with shields designed for the Arduino Uno R3. Digital pins 0 to 13 (and the adjacent AREF and GND pins), Analog inputs 0 to 5, the power header, ICSP header, and the UART port pins (0 and 1), are all in the same locations as on the Arduino Uno R3. This is also known as the Arduino 1.0 pinout. Click Here For More Detail"
 }
