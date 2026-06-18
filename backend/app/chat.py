@@ -8,12 +8,12 @@ def generate_answer(prompt: str):
     response = requests.post(
         OLLAMA_URL,
         json={
-            "model": "qwen3:1.7b",
+    "model": "qwen3:1.7b",
             "prompt": prompt,
             "stream": False,
             "think": False
         },
-        timeout=60
+        timeout=180
     )
 
     response.raise_for_status()
