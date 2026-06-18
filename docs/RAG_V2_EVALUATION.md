@@ -182,3 +182,16 @@ Results:
 
 Diagnosis:
 Ranking problem, not retrieval problem.
+Failures:
+
+1. Civil Engineering placements
+   Correct page retrieved but ranked #3/#4
+
+2. Hostel fees
+   Generic fee pages outrank hostel pages
+
+3. Research centres
+   Generic centre pages outrank specific centres
+
+4. Anti drug committee
+   Correct page not present in top 3
