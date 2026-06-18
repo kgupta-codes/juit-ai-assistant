@@ -56,6 +56,17 @@ GENERIC_TITLES = {
     "juit",
 }
 
+DEPARTMENT_NAV_LABELS = [
+    "programmes & courses",
+    "laboratories & tools",
+    "faculty",
+    "technical staff",
+    "placements",
+    "publications",
+    "research groups",
+    "notices/circulars",
+]
+
 
 def canonicalize_url(url: str) -> str:
     url = url.strip().replace("%20", "")
@@ -84,6 +95,11 @@ def clean_text(text: str) -> str:
     return re.sub(r"\s+", " ", text or "").strip()
 
 
+def department_nav_score(text: str) -> int:
+    normalized = clean_text(text).lower()
+    return sum(label in normalized for label in DEPARTMENT_NAV_LABELS)
+
+
 def remove_unwanted_elements(soup: BeautifulSoup) -> None:
     for tag in soup(REMOVE_TAGS):
         tag.decompose()
@@ -109,6 +125,55 @@ def remove_unwanted_elements(soup: BeautifulSoup) -> None:
 
         if "display:none" in style or "visibility:hidden" in style:
             tag.decompose()
+
+
+def remove_related_links_blocks(content) -> None:
+    for tag in list(content.find_all(True)):
+        text = clean_text(tag.get_text(" ", strip=True))
+        if not text:
+            continue
+
+        normalized = text.lower()
+        if "related links" not in normalized:
+            continue
+
+        if tag is not content and department_nav_score(text) >= 3:
+            tag.decompose()
+            continue
+
+        if normalized == "related links":
+            sibling = tag.find_next_sibling()
+            tag.decompose()
+
+            while sibling:
+                next_sibling = sibling.find_next_sibling()
+                sibling_text = clean_text(sibling.get_text(" ", strip=True))
+
+                if (
+                    sibling.name in {"h1", "h2", "h3", "h4"}
+                    and department_nav_score(sibling_text) == 0
+                ):
+                    break
+
+                if department_nav_score(sibling_text) > 0 or len(sibling_text) < 1000:
+                    sibling.decompose()
+                    sibling = next_sibling
+                    continue
+
+                break
+
+
+def remove_related_links_text(text: str) -> str:
+    marker = re.search(r"\bRelated Links\b", text, flags=re.IGNORECASE)
+    if not marker:
+        return text
+
+    suffix = text[marker.start():]
+    if department_nav_score(suffix) >= 3:
+        return clean_text(text[:marker.start()])
+
+    return text
+
 
 def normalize_title(title: str) -> str:
     title = clean_text(title)
@@ -209,8 +274,10 @@ def scrape_page(url: str):
         remove_unwanted_elements(soup)
 
         main_content = find_main_content(soup)
+        remove_related_links_blocks(main_content)
         title = extract_title(main_content, soup, url)
         text = clean_text(main_content.get_text(" ", strip=True))
+        text = remove_related_links_text(text)
 
         # Skip pages with little content
         if len(text) < 300:
