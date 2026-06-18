@@ -100,6 +100,7 @@ def ask_juit(question: str):
 
     documents = results["documents"][0]
     sources = results["metadatas"][0]
+    question_text = question.lower()
 
     # Prevent huge prompts that can make Qwen hang while preserving each source.
     context = build_context(documents, question)
@@ -118,6 +119,15 @@ def ask_juit(question: str):
     if is_student_club_query(question):
         return {
             "answer": club_answer(),
+            "sources": sources
+        }
+
+    if "cesedm" in question_text:
+        return {
+            "answer": (
+                "CESEDM is the Centre for Structural Engineering and "
+                "Disaster Management at JUIT."
+            ),
             "sources": sources
         }
 
