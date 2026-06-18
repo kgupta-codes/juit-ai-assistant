@@ -1,5 +1,13 @@
 from backend.app.retriever import search
+from backend.app.retriever import is_committee_query
+from backend.app.retriever import is_placement_query
+from backend.app.retriever import is_research_center_query
+from backend.app.retriever import is_student_club_query
 from backend.app.chat import generate_answer
+from backend.app.structured_answers import club_answer
+from backend.app.structured_answers import committee_answer
+from backend.app.structured_answers import placement_answer
+from backend.app.structured_answers import research_center_answer
 import re
 
 
@@ -104,6 +112,33 @@ def ask_juit(question: str):
         if hod:
             return {
                 "answer": f"The HOD of Civil Engineering is {hod}.",
+                "sources": sources
+            }
+
+    if is_student_club_query(question):
+        return {
+            "answer": club_answer(),
+            "sources": sources
+        }
+
+    if is_research_center_query(question):
+        return {
+            "answer": research_center_answer(),
+            "sources": sources
+        }
+
+    if is_committee_query(question):
+        return {
+            "answer": committee_answer(),
+            "sources": sources
+        }
+
+    if is_placement_query(question):
+        answer = placement_answer(documents)
+
+        if answer:
+            return {
+                "answer": answer,
                 "sources": sources
             }
 
