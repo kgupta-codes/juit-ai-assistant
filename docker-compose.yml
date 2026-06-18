@@ -1,0 +1,33 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "8000:8000"
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    network_mode: "service:ollama"
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_MODEL: qwen3:1.7b
+    volumes:
+      - ./chroma_db:/app/chroma_db:ro
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://127.0.0.1:8000
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  ollama_data:
