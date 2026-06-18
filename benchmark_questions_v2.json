@@ -1,0 +1,502 @@
+[
+  {
+    "id": "admissions_001",
+    "category": "admissions",
+    "question": "What undergraduate programs are available at JUIT?"
+  },
+  {
+    "id": "admissions_002",
+    "category": "admissions",
+    "question": "How can I apply for B.Tech admission at JUIT?"
+  },
+  {
+    "id": "admissions_003",
+    "category": "admissions",
+    "question": "What are the admission helpdesk contact details?"
+  },
+  {
+    "id": "admissions_004",
+    "category": "admissions",
+    "question": "What postgraduate programs does JUIT offer?"
+  },
+  {
+    "id": "admissions_005",
+    "category": "admissions",
+    "question": "Where can I find the admission disclosure information?"
+  },
+  {
+    "id": "admissions_006",
+    "category": "admissions",
+    "question": "What is the withdrawal and refund policy for admissions?"
+  },
+  {
+    "id": "admissions_007",
+    "category": "admissions",
+    "question": "Does JUIT provide information for international students?"
+  },
+  {
+    "id": "admissions_008",
+    "category": "admissions",
+    "question": "What documents or forms are available for download?"
+  },
+  {
+    "id": "admissions_009",
+    "category": "admissions",
+    "question": "What BBA program information is available at JUIT?"
+  },
+  {
+    "id": "admissions_010",
+    "category": "admissions",
+    "question": "What BCA program information is available at JUIT?"
+  },
+  {
+    "id": "fees_001",
+    "category": "fees",
+    "question": "What is the fee structure for B.Tech Indian students?"
+  },
+  {
+    "id": "fees_002",
+    "category": "fees",
+    "question": "What are the fees for international students?"
+  },
+  {
+    "id": "fees_003",
+    "category": "fees",
+    "question": "What are the tuition fees for undergraduate courses?"
+  },
+  {
+    "id": "fees_004",
+    "category": "fees",
+    "question": "What account details are provided for fee payment?"
+  },
+  {
+    "id": "fees_005",
+    "category": "fees",
+    "question": "Where can I find fee details for 2026 admissions?"
+  },
+  {
+    "id": "fees_006",
+    "category": "fees",
+    "question": "Are hostel charges mentioned in the fee details?"
+  },
+  {
+    "id": "fees_007",
+    "category": "fees",
+    "question": "What fee information is available for foreign students?"
+  },
+  {
+    "id": "fees_008",
+    "category": "fees",
+    "question": "Is there information about admission withdrawal refunds?"
+  },
+  {
+    "id": "fees_009",
+    "category": "fees",
+    "question": "What are the JUIT account query details?"
+  },
+  {
+    "id": "fees_010",
+    "category": "fees",
+    "question": "Can you summarize the B.Tech semester-wise tuition fees?"
+  },
+  {
+    "id": "departments_001",
+    "category": "departments",
+    "question": "Tell me about the Computer Science Engineering and Information Technology department."
+  },
+  {
+    "id": "departments_002",
+    "category": "departments",
+    "question": "Tell me about the Electronics and Communication Engineering department."
+  },
+  {
+    "id": "departments_003",
+    "category": "departments",
+    "question": "Tell me about the Civil Engineering department."
+  },
+  {
+    "id": "departments_004",
+    "category": "departments",
+    "question": "Tell me about the Biotechnology and Bioinformatics department."
+  },
+  {
+    "id": "departments_005",
+    "category": "departments",
+    "question": "Tell me about the Mathematics department."
+  },
+  {
+    "id": "departments_006",
+    "category": "departments",
+    "question": "Tell me about the Physics and Materials Science department."
+  },
+  {
+    "id": "departments_007",
+    "category": "departments",
+    "question": "Tell me about Humanities and Social Sciences at JUIT."
+  },
+  {
+    "id": "departments_008",
+    "category": "departments",
+    "question": "Who is the HOD of Civil Engineering?"
+  },
+  {
+    "id": "departments_009",
+    "category": "departments",
+    "question": "What laboratories are available for CSE and IT?"
+  },
+  {
+    "id": "departments_010",
+    "category": "departments",
+    "question": "What laboratories are available in Civil Engineering?"
+  },
+  {
+    "id": "departments_011",
+    "category": "departments",
+    "question": "What programs and courses are offered by ECE?"
+  },
+  {
+    "id": "departments_012",
+    "category": "departments",
+    "question": "What technical staff information is available for CSE and IT?"
+  },
+  {
+    "id": "departments_013",
+    "category": "departments",
+    "question": "What research groups are listed for JUIT?"
+  },
+  {
+    "id": "departments_014",
+    "category": "departments",
+    "question": "What are the thrust areas of CSE?"
+  },
+  {
+    "id": "departments_015",
+    "category": "departments",
+    "question": "What publications are listed for Civil Engineering?"
+  },
+  {
+    "id": "placements_001",
+    "category": "placements",
+    "question": "What is the placement record of Civil Engineering?"
+  },
+  {
+    "id": "placements_002",
+    "category": "placements",
+    "question": "What are the latest placement statistics at JUIT?"
+  },
+  {
+    "id": "placements_003",
+    "category": "placements",
+    "question": "Where can I find placement contact details?"
+  },
+  {
+    "id": "placements_004",
+    "category": "placements",
+    "question": "What placements are listed for ECE?"
+  },
+  {
+    "id": "placements_005",
+    "category": "placements",
+    "question": "What placement information is available for the 2021-2025 batch?"
+  },
+  {
+    "id": "placements_006",
+    "category": "placements",
+    "question": "What placement information is available for the 2020-2024 batch?"
+  },
+  {
+    "id": "placements_007",
+    "category": "placements",
+    "question": "What placement information is available for the 2019-2023 batch?"
+  },
+  {
+    "id": "placements_008",
+    "category": "placements",
+    "question": "What does the JUIT placements page describe?"
+  },
+  {
+    "id": "placements_009",
+    "category": "placements",
+    "question": "Are internship opportunities mentioned for Biotechnology students?"
+  },
+  {
+    "id": "placements_010",
+    "category": "placements",
+    "question": "What industrial training information is available?"
+  },
+  {
+    "id": "committees_001",
+    "category": "committees",
+    "question": "What committees exist for student welfare?"
+  },
+  {
+    "id": "committees_002",
+    "category": "committees",
+    "question": "What is ICC?"
+  },
+  {
+    "id": "committees_003",
+    "category": "committees",
+    "question": "What is the Student Grievance Redressal Committee?"
+  },
+  {
+    "id": "committees_004",
+    "category": "committees",
+    "question": "What is the Student Counselling Committee?"
+  },
+  {
+    "id": "committees_005",
+    "category": "committees",
+    "question": "What is the anti ragging committee at JUIT?"
+  },
+  {
+    "id": "committees_006",
+    "category": "committees",
+    "question": "What is the anti drug committee at JUIT?"
+  },
+  {
+    "id": "committees_007",
+    "category": "committees",
+    "question": "What is the website committee?"
+  },
+  {
+    "id": "committees_008",
+    "category": "committees",
+    "question": "What is the NEP committee?"
+  },
+  {
+    "id": "committees_009",
+    "category": "committees",
+    "question": "What is the ethics committee?"
+  },
+  {
+    "id": "committees_010",
+    "category": "committees",
+    "question": "What committee handles caste based discrimination complaints?"
+  },
+  {
+    "id": "clubs_001",
+    "category": "clubs",
+    "question": "What student clubs exist at JUIT?"
+  },
+  {
+    "id": "clubs_002",
+    "category": "clubs",
+    "question": "What is the JUIT Youth Club?"
+  },
+  {
+    "id": "clubs_003",
+    "category": "clubs",
+    "question": "What is NSS at JUIT?"
+  },
+  {
+    "id": "clubs_004",
+    "category": "clubs",
+    "question": "What is NCC at JUIT?"
+  },
+  {
+    "id": "clubs_005",
+    "category": "clubs",
+    "question": "What is the Coding Society JUIT?"
+  },
+  {
+    "id": "clubs_006",
+    "category": "clubs",
+    "question": "What is IEEE Student Branch at JUIT?"
+  },
+  {
+    "id": "clubs_007",
+    "category": "clubs",
+    "question": "What is the Synapse students club?"
+  },
+  {
+    "id": "clubs_008",
+    "category": "clubs",
+    "question": "What is Technovatorz electronics club?"
+  },
+  {
+    "id": "clubs_009",
+    "category": "clubs",
+    "question": "What is Koshish Club?"
+  },
+  {
+    "id": "clubs_010",
+    "category": "clubs",
+    "question": "What is the Gender Champions Club?"
+  },
+  {
+    "id": "research_001",
+    "category": "research_centers",
+    "question": "What research centers are available at JUIT?"
+  },
+  {
+    "id": "research_002",
+    "category": "research_centers",
+    "question": "What is CESEDM?"
+  },
+  {
+    "id": "research_003",
+    "category": "research_centers",
+    "question": "What is CESTRD?"
+  },
+  {
+    "id": "research_004",
+    "category": "research_centers",
+    "question": "What is CCCWR?"
+  },
+  {
+    "id": "research_005",
+    "category": "research_centers",
+    "question": "What is CEHTI?"
+  },
+  {
+    "id": "research_006",
+    "category": "research_centers",
+    "question": "What is the RIDE centre of excellence?"
+  },
+  {
+    "id": "research_007",
+    "category": "research_centers",
+    "question": "What is the Center of Excellence Industry 5.0?"
+  },
+  {
+    "id": "research_008",
+    "category": "research_centers",
+    "question": "What is the LDRA center of excellence?"
+  },
+  {
+    "id": "research_009",
+    "category": "research_centers",
+    "question": "What research projects are listed at JUIT?"
+  },
+  {
+    "id": "research_010",
+    "category": "research_centers",
+    "question": "What patents and research academic projects are listed?"
+  },
+  {
+    "id": "student_life_001",
+    "category": "student_life",
+    "question": "What student welfare information is available?"
+  },
+  {
+    "id": "student_life_002",
+    "category": "student_life",
+    "question": "What hostel information is available for aspirants?"
+  },
+  {
+    "id": "student_life_003",
+    "category": "student_life",
+    "question": "What dispensary information is available for aspirants?"
+  },
+  {
+    "id": "student_life_004",
+    "category": "student_life",
+    "question": "What mental health guidelines are available?"
+  },
+  {
+    "id": "student_life_005",
+    "category": "student_life",
+    "question": "Who are the mental health counsellors?"
+  },
+  {
+    "id": "student_life_006",
+    "category": "student_life",
+    "question": "What NCC events are listed?"
+  },
+  {
+    "id": "student_life_007",
+    "category": "student_life",
+    "question": "What NSS events are listed?"
+  },
+  {
+    "id": "student_life_008",
+    "category": "student_life",
+    "question": "What academic calendar information is available?"
+  },
+  {
+    "id": "student_life_009",
+    "category": "student_life",
+    "question": "What latest updates are available?"
+  },
+  {
+    "id": "student_life_010",
+    "category": "student_life",
+    "question": "What notices are available for students?"
+  },
+  {
+    "id": "student_life_011",
+    "category": "student_life",
+    "question": "What information is available about the library?"
+  },
+  {
+    "id": "student_life_012",
+    "category": "student_life",
+    "question": "What library collections are listed?"
+  },
+  {
+    "id": "student_life_013",
+    "category": "student_life",
+    "question": "What e-resources are available through the library?"
+  },
+  {
+    "id": "student_life_014",
+    "category": "student_life",
+    "question": "What student exchange programs are available?"
+  },
+  {
+    "id": "student_life_015",
+    "category": "student_life",
+    "question": "What alumni information is available?"
+  },
+  {
+    "id": "location_001",
+    "category": "location",
+    "question": "Where is JUIT located?"
+  },
+  {
+    "id": "location_002",
+    "category": "location",
+    "question": "How can I contact JUIT?"
+  },
+  {
+    "id": "location_003",
+    "category": "location",
+    "question": "What location details are available for the campus?"
+  },
+  {
+    "id": "location_004",
+    "category": "location",
+    "question": "What are the contact details for the CSE and IT department?"
+  },
+  {
+    "id": "location_005",
+    "category": "location",
+    "question": "What are the contact details for the ECE department?"
+  },
+  {
+    "id": "location_006",
+    "category": "location",
+    "question": "What library contact information is available?"
+  },
+  {
+    "id": "location_007",
+    "category": "location",
+    "question": "What admission helpdesk location or contact details are listed?"
+  },
+  {
+    "id": "location_008",
+    "category": "location",
+    "question": "What is the JUIT Waknaghat campus address?"
+  },
+  {
+    "id": "location_009",
+    "category": "location",
+    "question": "What visitor information is available for JUIT?"
+  },
+  {
+    "id": "location_010",
+    "category": "location",
+    "question": "What travel or venue information is available for JUIT conferences?"
+  }
+]
