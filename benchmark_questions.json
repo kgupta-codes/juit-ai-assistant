@@ -1,0 +1,109 @@
+[
+  {
+    "id": "hod_civil",
+    "question": "Who is the HOD of Civil Engineering?",
+    "required_answer_terms": ["Prof. Dr. Ashish Kumar"],
+    "required_source_terms": ["Civil Engineering Faculty"]
+  },
+  {
+    "id": "btech_fee",
+    "question": "What is the fee structure for B.Tech?",
+    "required_answer_terms": ["164550", "172800", "181450", "190550"],
+    "required_source_terms": ["FEE DETAILS 2026-27 ADMISSIONS (INDIAN STUDENTS)"]
+  },
+  {
+    "id": "academic_calendar",
+    "question": "What is the academic calendar?",
+    "required_answer_terms": ["academic calendar"],
+    "required_source_terms": ["Academic Calendar"]
+  },
+  {
+    "id": "student_clubs",
+    "question": "What student clubs exist at JUIT?",
+    "required_answer_terms": [
+      "JUIT Youth Club",
+      "National Service Scheme",
+      "National Cadet Corps",
+      "Civil Engineering Consortium",
+      "Coding Society JUIT",
+      "IEEE JUIT Student Branch",
+      "JUIT Synapse",
+      "Technical Club",
+      "Technovatorz",
+      "Koshish Club",
+      "Gender Champions Club"
+    ],
+    "required_source_terms": ["JUIT Youth Club", "Civil Engineering Consortium", "NCC"]
+  },
+  {
+    "id": "research_centers",
+    "question": "What research centers are available?",
+    "required_answer_terms": [
+      "Centre for Structural Engineering and Disaster Management",
+      "Centre of Sustainable Technologies for Rural Development",
+      "Centre for Climate Change and Water Resources",
+      "Centre of Healthcare Technologies and Informatics",
+      "Center of Excellence - Industry 5.0",
+      "Center of Excellence LDRA"
+    ],
+    "required_source_terms": [
+      "Centre for Structural Engineering and Disaster Management",
+      "Centre of Sustainable Technologies for Rural development"
+    ]
+  },
+  {
+    "id": "committee_list",
+    "question": "What committees exist for student welfare?",
+    "required_answer_terms": [
+      "Internal Complaint Committee",
+      "Anti Drug Committee",
+      "Student Counselling Committee",
+      "Student Grievance Redressal Committee",
+      "Ethics Committee",
+      "Anti Ragging Committee"
+    ],
+    "required_source_terms": ["Committees", "Student Grievance Redressal Committee"]
+  },
+  {
+    "id": "civil_placement",
+    "question": "What is the placement record of Civil Engineering?",
+    "required_answer_terms": [
+      "2018-2022: 18 placed out of 28 eligible",
+      "2017-2021: 8 placed out of 15 eligible",
+      "2016-2020: 11 placed out of 27 eligible",
+      "2015-2019: 19 placed out of 46 eligible",
+      "2014-2018: 8 placed out of 33 eligible"
+    ],
+    "required_source_terms": ["JUIT CE"]
+  },
+  {
+    "id": "icc",
+    "question": "What is ICC?",
+    "required_answer_terms": ["Internal Complaint Committee"],
+    "required_source_terms": ["Internal Complaint Committee"]
+  },
+  {
+    "id": "cesedm",
+    "question": "What is CESEDM?",
+    "required_answer_terms": ["structural engineering", "disaster"],
+    "required_source_terms": ["Centre for Structural Engineering and Disaster Management"]
+  },
+  {
+    "id": "cestrd",
+    "question": "What is CESTRD?",
+    "required_answer_terms": ["sustainable", "rural"],
+    "required_source_terms": ["Centre of Sustainable Technologies for Rural development"]
+  },
+  {
+    "id": "exchange_programs",
+    "question": "What exchange programs are available?",
+    "required_answer_terms": ["exchange"],
+    "required_source_terms": ["Student Exchange"]
+  },
+  {
+    "id": "biotechnology_department",
+    "question": "Tell me about the Biotechnology department.",
+    "required_answer_terms": ["Biotechnology"],
+    "required_source_terms": ["Biotechnology and Bioinformatics"]
+  }
+]
