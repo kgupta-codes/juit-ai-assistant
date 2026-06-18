@@ -33,9 +33,29 @@ ACRONYMS = {
 }
 
 
-def search(query: str, n_results: int = 20):
+def normalize_query(query: str) -> str:
 
     query = query.strip()
+
+    fillers = [
+        "what is",
+        "tell me about",
+        "explain",
+        "give details about",
+        "information about",
+    ]
+
+    lowered = query.lower()
+
+    for phrase in fillers:
+        lowered = lowered.replace(phrase, "")
+
+    return lowered.strip()
+
+
+def search(query: str, n_results: int = 20):
+
+    query = normalize_query(query)
 
     # --------------------------------------------------
     # STEP 1: Exact title match
