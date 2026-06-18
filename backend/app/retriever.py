@@ -77,10 +77,12 @@ def search(query: str, n_results: int = 20):
     # STEP 2: Acronym expansion
     # --------------------------------------------------
 
-    expanded_query = ACRONYMS.get(
-        query.upper(),
-        query
-    )
+    expanded_query = query
+
+    for acronym, expansion in ACRONYMS.items():
+
+        if acronym.lower() in query.lower():
+            expanded_query += " " + expansion
 
     # --------------------------------------------------
     # STEP 3: Semantic search
