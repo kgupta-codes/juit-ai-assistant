@@ -17,7 +17,7 @@ embedding_function = (
 )
 
 collection = client.get_collection(
-    name="juit_knowledge",
+    name="juit_knowledge_v2",
     embedding_function=embedding_function
 )
 
