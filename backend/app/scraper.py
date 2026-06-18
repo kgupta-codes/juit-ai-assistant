@@ -1,5 +1,7 @@
 import json
+import re
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -18,9 +20,164 @@ HEADERS = {
     "User-Agent": "JUIT-AI-Assistant/1.0"
 }
 
+REMOVE_TAGS = [
+    "script",
+    "style",
+    "noscript",
+    "template",
+    "header",
+    "nav",
+    "footer",
+    "aside",
+    "form",
+    "button",
+    "input",
+    "select",
+    "textarea",
+    "iframe",
+    "svg",
+    "canvas",
+]
+
+REMOVE_PATTERN = re.compile(
+    r"(nav|menu|header|footer|sidebar|login|search|breadcrumb|"
+    r"social|share|popup|modal|cookie|banner|carousel|slider|"
+    r"topbar|enquire)",
+    re.IGNORECASE,
+)
+
+GENERIC_TITLES = {
+    "",
+    "home",
+    "index",
+    "untitled",
+    "welcome",
+    "juit",
+}
+
+
+def canonicalize_url(url: str) -> str:
+    url = url.strip().replace("%20", "")
+    parts = urlsplit(url)
+
+    netloc = parts.netloc
+    if parts.scheme == "https" and netloc.endswith(":443"):
+        netloc = netloc[:-4]
+
+    path = parts.path.replace("%20", "")
+    if path != "/":
+        path = path.rstrip("/")
+
+    return urlunsplit(
+        (
+            parts.scheme,
+            netloc,
+            path,
+            parts.query,
+            "",
+        )
+    )
+
+
+def clean_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def remove_unwanted_elements(soup: BeautifulSoup) -> None:
+    for tag in soup(REMOVE_TAGS):
+        tag.decompose()
+
+    for tag in soup.find_all(True):
+        marker = " ".join(
+            [
+                tag.get("id", ""),
+                " ".join(tag.get("class", [])),
+                tag.get("role", ""),
+            ]
+        )
+
+        if REMOVE_PATTERN.search(marker):
+            tag.decompose()
+            continue
+
+        style = tag.get("style", "").replace(" ", "").lower()
+        if "display:none" in style or "visibility:hidden" in style:
+            tag.decompose()
+
+
+def normalize_title(title: str) -> str:
+    title = clean_text(title)
+    title = re.sub(
+        r"\s*[-|]\s*(JUIT|Jaypee University Of Information Technology)\s*$",
+        "",
+        title,
+        flags=re.IGNORECASE,
+    )
+    return title.strip()
+
+
+def is_good_title(title: str) -> bool:
+    return normalize_title(title).lower() not in GENERIC_TITLES
+
+
+def title_from_url(url: str) -> str:
+    path = urlsplit(url).path.strip("/")
+    slug = path.split("/")[-1] if path else ""
+    slug = slug.replace("%20", "")
+    slug = re.sub(r"[-_]+", " ", slug)
+    return slug.title() if slug else "Untitled"
+
+
+def find_main_content(soup: BeautifulSoup):
+    selectors = [
+        ".bio-left",
+        "main",
+        "article",
+        "#content",
+        ".content",
+        ".main-content",
+        ".page-content",
+        ".entry-content",
+    ]
+
+    for selector in selectors:
+        element = soup.select_one(selector)
+        if element and len(clean_text(element.get_text(" ", strip=True))) >= 200:
+            return element
+
+    return soup.body or soup
+
+
+def extract_title(content, soup: BeautifulSoup, url: str) -> str:
+    for selector in ["h1", "h2"]:
+        heading = content.select_one(selector)
+        if heading:
+            title = normalize_title(heading.get_text(" ", strip=True))
+            if is_good_title(title):
+                return title
+
+    if soup.title and soup.title.string:
+        title = normalize_title(soup.title.string)
+        if is_good_title(title):
+            return title
+
+    return normalize_title(title_from_url(url))
+
+
+def output_filename(url: str) -> str:
+    return (
+        url.replace("https://", "")
+        .replace("http://", "")
+        .replace("/", "_")
+        .replace("?", "_")
+        .replace("&", "_")
+        + ".json"
+    )
+
 
 def scrape_page(url: str):
     try:
+        url = canonicalize_url(url)
         print(f"[INFO] Scraping: {url}")
 
         response = requests.get(
@@ -44,38 +201,11 @@ def scrape_page(url: str):
             "lxml"
         )
 
-        # Remove unwanted tags
-        for tag in soup(
-            ["script", "style", "noscript"]
-        ):
-            tag.decompose()
+        remove_unwanted_elements(soup)
 
-        # Page title
-        title = (
-            soup.title.string.strip()
-            if soup.title and soup.title.string
-            else "Untitled"
-        )
-
-        # Try extracting main content
-        main_content = (
-            soup.find("div", class_="bio-left")
-            or soup.find("main")
-            or soup.find("article")
-            or soup.find("section")
-            or soup.find("div", class_="content")
-            or soup.find("div", id="content")
-        )
-        if main_content:
-            text = main_content.get_text(
-                separator=" ",
-                strip=True
-            )
-        else:
-            text = soup.get_text(
-                separator=" ",
-                strip=True
-            )
+        main_content = find_main_content(soup)
+        title = extract_title(main_content, soup, url)
+        text = clean_text(main_content.get_text(" ", strip=True))
 
         # Skip pages with little content
         if len(text) < 300:
@@ -90,16 +220,7 @@ def scrape_page(url: str):
             "content": text
         }
 
-        filename = (
-            url.replace("https://", "")
-            .replace("http://", "")
-            .replace("/", "_")
-            .replace("?", "_")
-            .replace("&", "_")
-            + ".json"
-        )
-
-        output_file = DATA_DIR / filename
+        output_file = DATA_DIR / output_filename(url)
 
         # Skip already scraped files
         if output_file.exists():
@@ -147,12 +268,12 @@ def load_seed_urls():
     ) as f:
 
         urls = [
-            line.strip()
+            canonicalize_url(line)
             for line in f
             if line.strip()
         ]
 
-    return urls
+    return sorted(set(urls))
 
 
 def main():
