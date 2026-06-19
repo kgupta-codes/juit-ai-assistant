@@ -15,7 +15,9 @@ services:
     depends_on:
       - ollama
     environment:
+      OLLAMA_URL: http://localhost:11434/api/generate
       OLLAMA_MODEL: qwen3:1.7b
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
     volumes:
       - ./chroma_db:/app/chroma_db:ro
 

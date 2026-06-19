@@ -1,0 +1,11 @@
+.git
+.env
+venv
+__pycache__
+*.pyc
+.DS_Store
+benchmark_report.md
+manual_test_results.md
+frontend/node_modules
+frontend/dist
+chroma_db
