@@ -72,27 +72,32 @@ The benchmark writes `benchmark_report.md` and exits non-zero if any required an
 
 ## Screenshots
 
-Screenshots should be added from the running application. Do not use mock or fabricated screenshots.
+Screenshots should come from the running application only. Do not use mockups or fabricated images.
 
 ### Home Page
 
-Placeholder: add the landing/chat screen screenshot here.
+![Home Page screenshot](screenshots/home.png)
+Landing view of the JUIT AI Assistant chat interface.
 
 ### HOD Query
 
-Placeholder: add a screenshot of a Civil Engineering HOD query and answer.
+![HOD Query screenshot](screenshots/hod-query.png)
+Example answer for a Civil Engineering HOD question.
 
 ### Fee Query
 
-Placeholder: add a screenshot of a B.Tech fee query and answer.
+![Fee Query screenshot](screenshots/fees-query.png)
+Example answer for a B.Tech fee structure question.
 
 ### Research Centers Query
 
-Placeholder: add a screenshot of a research centers query and answer.
+![Research Centers Query screenshot](screenshots/research-centers.png)
+Example answer listing JUIT research centers and centers of excellence.
 
 ### Placement Query
 
-Placeholder: add a screenshot of a placement query and answer.
+![Placement Query screenshot](screenshots/placement-query.png)
+Example answer for a placement-related query.
 
 ## Local Setup
 
