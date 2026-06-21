@@ -84,20 +84,20 @@ Landing view of the JUIT AI Assistant chat interface.
 ![HOD Query screenshot](screenshots/HOD.png)
 Example answer for a Civil Engineering HOD question.
 
-### Fee Query
+### Scholarship Query
 
-![Fee Query screenshot](screenshots/fees-query.png)
-Example answer for a B.Tech fee structure question.
+![Fee Query screenshot](screenshots/Scholarships.png)
+Example answer for Scholarship question.
 
 ### Research Centers Query
 
-![Research Centers Query screenshot](screenshots/research-centers.png)
+![Research Centers Query screenshot](screenshots/research.png)
 Example answer listing JUIT research centers and centers of excellence.
 
-### Placement Query
+### Hostel Query
 
-![Placement Query screenshot](screenshots/placement-query.png)
-Example answer for a placement-related query.
+![Placement Query screenshot](screenshots/Hostel.png)
+Example answer for a Hostel-related query.
 
 ## Local Setup
 
