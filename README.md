@@ -81,7 +81,7 @@ Landing view of the JUIT AI Assistant chat interface.
 
 ### HOD Query
 
-![HOD Query screenshot]("C:\Users\kunal\Downloads\BraveDownloads\HOD of CE.png")
+![HOD Query screenshot](screenshots/HOD.png)
 Example answer for a Civil Engineering HOD question.
 
 ### Fee Query
