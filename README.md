@@ -91,7 +91,7 @@ Example answer for Scholarship question.
 
 ### Research Centers Query
 
-![Research Centers Query screenshot](screenshots/research.png)
+![Research Centers Query screenshot](screenshots/Research.png)
 Example answer listing JUIT research centers and centers of excellence.
 
 ### Hostel Query
