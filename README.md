@@ -76,12 +76,12 @@ Screenshots should come from the running application only. Do not use mockups or
 
 ### Home Page
 
-![Home Page screenshot](screenshots/home.png)
+![Home Page screenshot]("C:\Users\kunal\Downloads\BraveDownloads\Home Screen.png")
 Landing view of the JUIT AI Assistant chat interface.
 
 ### HOD Query
 
-![HOD Query screenshot](screenshots/hod-query.png)
+![HOD Query screenshot]("C:\Users\kunal\Downloads\BraveDownloads\HOD of CE.png")
 Example answer for a Civil Engineering HOD question.
 
 ### Fee Query
