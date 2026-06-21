@@ -76,7 +76,7 @@ Screenshots should come from the running application only. Do not use mockups or
 
 ### Home Page
 
-![Home Page screenshot](C:\Users\kunal\Downloads\BraveDownloads\Home Screen.png)
+![Home Page screenshot](screenshots/Home-Screen.png)
 Landing view of the JUIT AI Assistant chat interface.
 
 ### HOD Query
