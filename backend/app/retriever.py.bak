@@ -595,35 +595,6 @@ def _placement_boost(query_tokens: set[str], document: str, metadata: dict) -> f
 
     return boost
 
-def _hostel_boost(query_tokens: set[str], document: str, metadata: dict) -> float:
-    if not (query_tokens & {"hostel", "hostels"}):
-        return 0.0
-
-    meta_text = _metadata_text(metadata)
-    document_text = _normalize_text(document)
-
-    boost = 0.0
-
-    if "hostel" in meta_text:
-        boost += 3.0
-
-    if metadata.get("title", "").lower() == "hostels":
-        boost += 5.0
-
-    for term in (
-        "hostel",
-        "hostels",
-        "bhawan",
-        "mess",
-        "gym",
-        "accommodation",
-        "residential",
-    ):
-        if term in document_text:
-            boost += 0.5
-
-    return boost
-
 def _faculty_boost(query: str, title: str, document: str, metadata: dict) -> float:
     query_text = query.lower()
     title_text = title.lower()
@@ -671,15 +642,17 @@ def _rank_candidate(query: str, document: str, metadata: dict, distance) -> floa
     score += _research_center_boost(query_tokens, document, metadata)
     score += _student_club_boost(query_tokens, document, metadata)
     score += _placement_boost(query_tokens, document, metadata)
-    score += _hostel_boost(query_tokens, document, metadata)
     return score
 
 
 def _dedupe_key(metadata: dict) -> str:
     title = _normalize_text(metadata.get("title", ""))
-    chunk_index = metadata.get("chunk_index", 0)
 
-    return f"{title}:{chunk_index}"
+    if title:
+        return title
+
+    return _normalize_text(metadata.get("canonical_url") or metadata.get("url") or "")
+
 
 def _rerank(results: dict, query: str, n_results: int) -> dict:
     documents = results.get("documents", [[]])[0]

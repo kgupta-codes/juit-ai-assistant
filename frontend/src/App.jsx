@@ -1,50 +1,294 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import Composer from "./components/Composer";
+import ConversationList from "./components/ConversationList";
+import Sidebar from "./components/Sidebar";
+import Topbar from "./components/Topbar";
+import WelcomeState from "./components/WelcomeState";
+import {
+  activeConversationStorageKey,
+  conversationStorageKey,
+  createConversation,
+  loadAppState,
+  maxStoredConversations,
+  nextId,
+  summarizeConversationTitle,
+  themeStorageKey,
+  timestamp,
+} from "./lib/conversations";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
-const welcomeMessage = {
-  id: "welcome",
-  role: "assistant",
-  content:
-    "Hello. Ask me about admissions, fees, departments, placements, committees, research centers, or student life at JUIT.",
-  sources: [],
-};
+const examplePrompts = [
+  {
+    label: "Admissions",
+    question: "Tell me about admissions at JUIT.",
+  },
+  {
+    label: "Placements",
+    question: "Tell me about placements at JUIT.",
+  },
+  {
+    label: "Hostels",
+    question: "What hostel facilities are available at JUIT?",
+  },
+  {
+    label: "Departments",
+    question: "What departments does JUIT have?",
+  },
+  {
+    label: "Scholarships",
+    question: "What scholarships are available at JUIT?",
+  },
+  {
+    label: "Research Centers",
+    question: "What research centers are available at JUIT?",
+  },
+];
 
-function sourceKey(source, index) {
-  return `${source?.url || source?.canonical_url || source?.title || "source"}-${index}`;
-}
+const EMPTY_MESSAGES = [];
+const sidebarBreakpoint = 1120;
 
 function App() {
+  const [initialState] = useState(() => loadAppState());
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.localStorage.getItem(themeStorageKey) === "dark";
+  });
+  const [conversations, setConversations] = useState(initialState.conversations);
+  const [activeConversationId, setActiveConversationId] = useState(
+    initialState.activeConversationId,
+  );
   const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState([welcomeMessage]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
+  const activeRequestRef = useRef(0);
+  const streamTimerRef = useRef(null);
+
+  const activeConversation = useMemo(
+    () =>
+      conversations.find(
+        (conversation) => conversation.id === activeConversationId,
+      ) || conversations[0],
+    [activeConversationId, conversations],
+  );
+
+  const messages = activeConversation?.messages ?? EMPTY_MESSAGES;
+  const visibleConversations = conversations
+    .filter((conversation) => conversation.messages.length > 0)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, maxStoredConversations);
+  const hasMessages = messages.length > 0;
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = isDarkMode ? "dark" : "light";
+    window.localStorage.setItem(themeStorageKey, isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const askQuestion = async () => {
-    const trimmedQuery = query.trim();
+  useEffect(() => {
+    window.localStorage.setItem(
+      conversationStorageKey,
+      JSON.stringify(conversations.slice(0, maxStoredConversations)),
+    );
+    window.localStorage.setItem(activeConversationStorageKey, activeConversationId);
+  }, [activeConversationId, conversations]);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
+  }, [query]);
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > sidebarBreakpoint) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (streamTimerRef.current) {
+        clearTimeout(streamTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  const focusComposer = () => {
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  };
+
+  const cancelStream = () => {
+    if (streamTimerRef.current) {
+      clearTimeout(streamTimerRef.current);
+      streamTimerRef.current = null;
+    }
+  };
+
+  const persistConversation = (conversationId, updater) => {
+    setConversations((currentConversations) =>
+      currentConversations.map((conversation) =>
+        conversation.id === conversationId ? updater(conversation) : conversation,
+      ),
+    );
+  };
+
+  const streamAssistantReply = (conversationId, answer, sources) => {
+    cancelStream();
+
+    const fullText = answer || "I could not find that information in the JUIT knowledge base.";
+    const assistantMessageId = nextId("assistant");
+    const chunkSize = Math.max(2, Math.ceil(fullText.length / 42));
+    let cursor = 0;
+
+    persistConversation(conversationId, (conversation) => ({
+      ...conversation,
+      messages: [
+        ...conversation.messages,
+        {
+          id: assistantMessageId,
+          role: "assistant",
+          content: "",
+          sources,
+          isStreaming: true,
+        },
+      ],
+      updatedAt: timestamp(),
+    }));
+
+    const tick = () => {
+      const nextCursor = Math.min(fullText.length, cursor + chunkSize);
+      const nextContent = fullText.slice(0, nextCursor);
+
+      persistConversation(conversationId, (conversation) => ({
+        ...conversation,
+        messages: conversation.messages.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                content: nextContent,
+                isStreaming: nextCursor < fullText.length,
+              }
+            : message,
+        ),
+        updatedAt: timestamp(),
+      }));
+
+      cursor = nextCursor;
+
+      if (cursor < fullText.length) {
+        streamTimerRef.current = window.setTimeout(tick, 16);
+      } else {
+        streamTimerRef.current = null;
+        setIsLoading(false);
+      }
+    };
+
+    streamTimerRef.current = window.setTimeout(tick, 180);
+  };
+
+  const startNewChat = () => {
+    if (activeConversation && activeConversation.messages.length === 0 && !query.trim()) {
+      setError("");
+      setIsLoading(false);
+      setIsSidebarOpen(false);
+      activeRequestRef.current = 0;
+      focusComposer();
+      return;
+    }
+
+    const draftConversation = createConversation();
+    setConversations((currentConversations) => [
+      draftConversation,
+      ...currentConversations.filter((conversation) => conversation.id !== draftConversation.id),
+    ]);
+    setActiveConversationId(draftConversation.id);
+    setQuery("");
+    setError("");
+    setIsLoading(false);
+    setIsSidebarOpen(false);
+    activeRequestRef.current = 0;
+    focusComposer();
+  };
+
+  const askQuestion = async (overrideQuery = query) => {
+    const trimmedQuery = overrideQuery.trim();
 
     if (!trimmedQuery || isLoading) {
       return;
     }
 
+    const requestId = timestamp();
+    activeRequestRef.current = requestId;
     const userMessage = {
-      id: `user-${Date.now()}`,
+      id: nextId("user"),
       role: "user",
       content: trimmedQuery,
       sources: [],
     };
+    const conversationId = activeConversation?.id || `conv-${requestId}`;
+    const currentConversation = activeConversation;
 
-    setMessages((currentMessages) => [...currentMessages, userMessage]);
+    if (!currentConversation || currentConversation.messages.length === 0) {
+      const nextConversation = currentConversation
+        ? {
+            ...currentConversation,
+            title: summarizeConversationTitle(trimmedQuery),
+            messages: [userMessage],
+            updatedAt: timestamp(),
+          }
+        : {
+            id: conversationId,
+            title: summarizeConversationTitle(trimmedQuery),
+            messages: [userMessage],
+            updatedAt: timestamp(),
+          };
+
+      setConversations((currentConversations) => [
+        nextConversation,
+        ...currentConversations.filter(
+          (conversation) => conversation.id !== nextConversation.id,
+        ),
+      ]);
+      setActiveConversationId(nextConversation.id);
+    } else {
+      persistConversation(conversationId, (conversation) => ({
+        ...conversation,
+        title:
+          conversation.title === "New chat"
+            ? summarizeConversationTitle(trimmedQuery)
+            : conversation.title,
+        messages: [...conversation.messages, userMessage],
+        updatedAt: timestamp(),
+      }));
+    }
+
     setQuery("");
     setError("");
     setIsLoading(true);
+    setIsSidebarOpen(false);
 
     try {
       const response = await fetch(`${API_BASE_URL}/chat`, {
@@ -52,9 +296,7 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          query: trimmedQuery,
-        }),
+        body: JSON.stringify({ query: trimmedQuery }),
       });
 
       if (!response.ok) {
@@ -62,37 +304,44 @@ function App() {
       }
 
       const data = await response.json();
-      const assistantMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content:
-          data.answer ||
-          "I could not find that information in the JUIT knowledge base.",
-        sources: Array.isArray(data.sources) ? data.sources : [],
-      };
 
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        assistantMessage,
-      ]);
+      if (activeRequestRef.current !== requestId) {
+        return;
+      }
+
+      streamAssistantReply(
+        conversationId,
+        data.answer,
+        Array.isArray(data.sources) ? data.sources : [],
+      );
     } catch (requestError) {
-      const errorMessage =
-        "I could not reach the JUIT AI service. Please check that the backend is running and try again.";
+      if (activeRequestRef.current !== requestId) {
+        return;
+      }
 
-      setError(errorMessage);
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        {
-          id: `error-${Date.now()}`,
-          role: "assistant",
-          content: errorMessage,
-          sources: [],
-          isError: true,
-        },
-      ]);
-      console.error(requestError);
-    } finally {
+      cancelStream();
       setIsLoading(false);
+      setError(
+        "I could not reach the JUIT AI service. Please check that the backend is running and try again.",
+      );
+
+      persistConversation(conversationId, (conversation) => ({
+        ...conversation,
+        messages: [
+          ...conversation.messages,
+          {
+            id: nextId("error"),
+            role: "assistant",
+            content:
+              "I could not reach the JUIT AI service. Please check that the backend is running and try again.",
+            sources: [],
+            isError: true,
+          },
+        ],
+        updatedAt: timestamp(),
+      }));
+
+      console.error(requestError);
     }
   };
 
@@ -103,97 +352,62 @@ function App() {
     }
   };
 
+  const openConversation = (conversationId) => {
+    setActiveConversationId(conversationId);
+    setQuery("");
+    setError("");
+    setIsLoading(false);
+    setIsSidebarOpen(false);
+    activeRequestRef.current = 0;
+    cancelStream();
+    focusComposer();
+  };
+
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div>
-          <p className="eyebrow">Jaypee University of Information Technology</p>
-          <h1>JUIT AI Assistant</h1>
-        </div>
-        <p className="status-pill">Knowledge base ready</p>
-      </header>
+      <Sidebar
+        activeConversationId={activeConversationId}
+        conversations={visibleConversations}
+        isDarkMode={isDarkMode}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onNewChat={startNewChat}
+        onOpenConversation={openConversation}
+        onToggleTheme={() => setIsDarkMode((current) => !current)}
+      />
 
-      <main className="chat-panel" aria-label="Chat with JUIT AI Assistant">
-        <section className="message-list" aria-live="polite">
-          {messages.map((message) => (
-            <article
-              className={`message-row ${message.role}`}
-              key={message.id}
-            >
-              <div
-                className={`message-bubble ${message.role} ${
-                  message.isError ? "error" : ""
-                }`}
-              >
-                <p>{message.content}</p>
+      <main className="workspace">
+        <Topbar
+          isDarkMode={isDarkMode}
+          onToggleSidebar={() => setIsSidebarOpen((current) => !current)}
+          onToggleTheme={() => setIsDarkMode((current) => !current)}
+        />
 
-                {message.sources.length > 0 && (
-                  <div className="sources">
-                    <p className="sources-title">Sources</p>
-                    <ul>
-                      {message.sources.map((source, index) => {
-                        const url = source.url || source.canonical_url;
-                        const title = source.title || "JUIT source";
+        <section className="conversation-panel" aria-label="Conversation area">
+          {!hasMessages ? (
+            <WelcomeState
+              prompts={examplePrompts}
+              isLoading={isLoading}
+              onAsk={askQuestion}
+            />
+          ) : null}
 
-                        return (
-                          <li key={sourceKey(source, index)}>
-                            {url ? (
-                              <a href={url} target="_blank" rel="noreferrer">
-                                <span>{title}</span>
-                                <small>{url}</small>
-                              </a>
-                            ) : (
-                              <span>
-                                <span>{title}</span>
-                              </span>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </article>
-          ))}
-
-          {isLoading && (
-            <article className="message-row assistant">
-              <div className="message-bubble assistant loading">
-                <span className="spinner" aria-hidden="true" />
-                <span>Searching the JUIT knowledge base...</span>
-              </div>
-            </article>
-          )}
-
-          <div ref={messagesEndRef} />
-        </section>
-
-        <form
-          className="composer"
-          onSubmit={(event) => {
-            event.preventDefault();
-            askQuestion();
-          }}
-        >
-          <label className="sr-only" htmlFor="chat-input">
-            Ask a question
-          </label>
-          <textarea
-            id="chat-input"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about fees, placements, departments, committees..."
-            disabled={isLoading}
-            rows={1}
+          <ConversationList
+            isLoading={isLoading}
+            messages={messages}
+            messagesEndRef={messagesEndRef}
           />
-          <button type="submit" disabled={isLoading || !query.trim()}>
-            Send
-          </button>
-        </form>
 
-        {error && <p className="form-error">{error}</p>}
+          <Composer
+            disabled={isLoading}
+            error={error}
+            onChange={setQuery}
+            onKeyDown={handleKeyDown}
+            onSubmit={askQuestion}
+            query={query}
+            textareaRef={textareaRef}
+          />
+        </section>
       </main>
     </div>
   );

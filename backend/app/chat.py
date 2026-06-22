@@ -1,9 +1,15 @@
 import os
-
 import requests
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:1.7b")
+OLLAMA_URL = os.getenv(
+    "OLLAMA_URL",
+    "http://localhost:11434/api/generate"
+)
+
+OLLAMA_MODEL = os.getenv(
+    "OLLAMA_MODEL",
+    "qwen3:1.7b"
+)
 
 
 def generate_answer(prompt: str):
@@ -14,7 +20,11 @@ def generate_answer(prompt: str):
             "model": OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False,
-            "think": False
+            "think": False,
+            "options": {
+                "num_ctx": 2048,
+                "num_predict": 250
+            }
         },
         timeout=180
     )
