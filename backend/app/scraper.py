@@ -1,11 +1,13 @@
 import json
+import logging
 import re
-import traceback
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
+
+LOGGER = logging.getLogger(__name__)
 
 # Project root directory
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -248,7 +250,7 @@ def output_filename(url: str) -> str:
 def scrape_page(url: str):
     try:
         url = canonicalize_url(url)
-        print(f"[INFO] Scraping: {url}")
+        LOGGER.info("Scraping %s", url)
 
         response = requests.get(
             url,
@@ -263,7 +265,7 @@ def scrape_page(url: str):
             "Content-Type",
             ""
         ):
-            print(f"[SKIP] Not HTML: {url}")
+            LOGGER.info("Skipping non-HTML page: %s", url)
             return
 
         soup = BeautifulSoup(
@@ -281,9 +283,7 @@ def scrape_page(url: str):
 
         # Skip pages with little content
         if len(text) < 300:
-            print(
-                f"[SKIP] Too little content: {url}"
-            )
+            LOGGER.info("Skipping low-content page: %s", url)
             return
 
         data = {
@@ -296,9 +296,7 @@ def scrape_page(url: str):
 
         # Skip already scraped files
         if output_file.exists():
-            print(
-                f"[SKIP] Already exists: {output_file.name}"
-            )
+            LOGGER.info("Skipping existing page: %s", output_file.name)
             return
 
         with open(
@@ -313,17 +311,13 @@ def scrape_page(url: str):
                 indent=2
             )
 
-        print(
-            f"[OK] Saved -> {output_file.name}"
-        )
+        LOGGER.info("Saved %s", output_file.name)
 
-    except requests.exceptions.RequestException as e:
-        print(f"[REQUEST ERROR] {url}")
-        print(e)
+    except requests.exceptions.RequestException:
+        LOGGER.exception("Request failed for %s", url)
 
-    except Exception as e:
-        print(f"[ERROR] {url}")
-        traceback.print_exc()
+    except Exception:
+        LOGGER.exception("Failed to scrape %s", url)
 def load_seed_urls():
 
     if not SEED_FILE.exists():
@@ -347,19 +341,16 @@ def load_seed_urls():
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
     urls = load_seed_urls()
 
-    print(
-        f"[INFO] Loaded {len(urls)} URLs"
-    )
+    LOGGER.info("Loaded %s URLs", len(urls))
 
     for url in urls:
         scrape_page(url)
 
-    print(
-        "\n[INFO] Scraping completed"
-    )
+    LOGGER.info("Scraping completed")
 
 
 if __name__ == "__main__":

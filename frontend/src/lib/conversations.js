@@ -37,6 +37,17 @@ export function formatConversationTime(value) {
   });
 }
 
+export function formatMessageTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  return new Date(value).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function readJSON(key, fallback) {
   if (typeof window === "undefined") {
     return fallback;
@@ -61,8 +72,16 @@ export function createConversation() {
 }
 
 export function summarizeConversationTitle(text) {
-  const cleaned = text.replace(/\s+/g, " ").trim();
-  return cleaned.length <= 44 ? cleaned : `${cleaned.slice(0, 43)}...`;
+  const cleaned = text
+    .replace(/\s+/g, " ")
+    .replace(/[?.!]+$/g, "")
+    .trim();
+  const withoutLeadIn = cleaned.replace(
+    /^(tell me about|what is|what are|who is|give me|explain)\s+/i,
+    "",
+  );
+  const title = withoutLeadIn || cleaned || "New chat";
+  return title.length <= 48 ? title : `${title.slice(0, 47)}...`;
 }
 
 export function loadAppState() {
@@ -107,4 +126,38 @@ export function getDomain(url) {
   } catch {
     return "juit.ac.in";
   }
+}
+
+export function getFaviconUrl(url) {
+  try {
+    const parsedUrl = new URL(url);
+    return `${parsedUrl.origin}/favicon.ico`;
+  } catch {
+    return "/favicon.svg";
+  }
+}
+
+export function formatSourceTitle(source) {
+  const rawTitle = String(source?.title || source?.page || source?.url || "JUIT source");
+  const cleaned = rawTitle
+    .replace(/\s*[-|]\s*(JUIT|Jaypee University.*)$/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) {
+    return "JUIT source";
+  }
+
+  if (cleaned === cleaned.toUpperCase() && cleaned.length > 4) {
+    return cleaned
+      .toLowerCase()
+      .replace(/\b[a-z]/g, (character) => character.toUpperCase())
+      .replace(/\bJuit\b/g, "JUIT")
+      .replace(/\bCse\b/g, "CSE")
+      .replace(/\bIt\b/g, "IT")
+      .replace(/\bEce\b/g, "ECE");
+  }
+
+  return cleaned;
 }

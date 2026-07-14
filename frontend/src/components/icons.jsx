@@ -72,6 +72,63 @@ export function CloseIcon() {
   );
 }
 
+export function CopyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 7a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-1v-2h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v1H8V7Z" />
+      <path d="M6 9h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3Zm0 2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1H6Z" />
+    </svg>
+  );
+}
+
+export function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M17.7 6.3A8 8 0 0 0 4.2 10H2a10 10 0 0 1 17.1-5.1L21 3v6h-6l2.7-2.7ZM6.3 17.7A8 8 0 0 0 19.8 14H22A10 10 0 0 1 4.9 19.1L3 21v-6h6l-2.7 2.7Z" />
+    </svg>
+  );
+}
+
+export function StopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 7h10v10H7z" />
+    </svg>
+  );
+}
+
+export function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.2 4.2-1.4 1.4-4.2-4.2A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" />
+    </svg>
+  );
+}
+
+export function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M17.8 3.2a2.8 2.8 0 0 1 4 4L8.7 20.3 3 21l.7-5.7L17.8 3.2Zm2.6 1.4a.8.8 0 0 0-1.2 0L18 5.8 19.2 7l1.2-1.2a.8.8 0 0 0 0-1.2ZM5.6 16.2l-.3 2.5 2.5-.3 10-10L16 6.6l-10.4 9.6Z" />
+    </svg>
+  );
+}
+
+export function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9 3h6l1 2h5v2H3V5h5l1-2Zm-3 6h12l-.8 12H6.8L6 9Zm2.1 2 .5 8h6.8l.5-8H8.1Z" />
+    </svg>
+  );
+}
+
+export function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m9.2 16.6-4.4-4.4-1.4 1.4 5.8 5.8L21 7.6l-1.4-1.4L9.2 16.6Z" />
+    </svg>
+  );
+}
+
 export function TopicIcon({ label }) {
   switch (label) {
     case "Admissions":

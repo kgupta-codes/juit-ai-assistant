@@ -1,9 +1,20 @@
+import { useMemo, useState } from "react";
 import {
   appVersion,
   formatConversationTime,
   summarizeConversationTitle,
 } from "../lib/conversations";
-import { CloseIcon, LogoMark, MoonIcon, PlusIcon, SunIcon } from "./icons";
+import {
+  CheckIcon,
+  CloseIcon,
+  EditIcon,
+  LogoMark,
+  MoonIcon,
+  PlusIcon,
+  SearchIcon,
+  SunIcon,
+  TrashIcon,
+} from "./icons";
 
 export default function Sidebar({
   activeConversationId,
@@ -11,10 +22,49 @@ export default function Sidebar({
   isDarkMode,
   isOpen,
   onClose,
+  onDeleteConversation,
   onNewChat,
   onOpenConversation,
+  onRenameConversation,
   onToggleTheme,
 }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [draftTitle, setDraftTitle] = useState("");
+
+  const filteredConversations = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return conversations;
+    }
+
+    return conversations.filter((conversation) => {
+      const haystack = [
+        conversation.title,
+        ...conversation.messages.map((message) => message.content),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(normalizedQuery);
+    });
+  }, [conversations, searchQuery]);
+
+  const startRename = (conversation, preview) => {
+    setEditingId(conversation.id);
+    setDraftTitle(preview);
+  };
+
+  const submitRename = (conversationId) => {
+    const nextTitle = draftTitle.trim();
+    if (nextTitle) {
+      onRenameConversation(conversationId, nextTitle);
+    }
+    setEditingId(null);
+    setDraftTitle("");
+  };
+
   return (
     <>
       <button
@@ -52,11 +102,24 @@ export default function Sidebar({
         <section className="recent-section" aria-label="Recent conversations">
           <div className="recent-heading">Recent</div>
 
+          <label className="recent-search">
+            <SearchIcon />
+            <span className="sr-only">Search chats</span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search chats"
+            />
+          </label>
+
           <div className="recent-list">
-            {conversations.length === 0 ? (
-              <div className="recent-empty">No conversations yet.</div>
+            {filteredConversations.length === 0 ? (
+              <div className="recent-empty">
+                {conversations.length === 0 ? "No conversations yet." : "No matching chats."}
+              </div>
             ) : (
-              conversations.map((conversation) => {
+              filteredConversations.map((conversation) => {
                 const isActive = conversation.id === activeConversationId;
                 const preview =
                   conversation.title !== "New chat"
@@ -67,20 +130,68 @@ export default function Sidebar({
                       );
 
                 return (
-                  <button
+                  <div
                     key={conversation.id}
-                    type="button"
                     className={`recent-item${isActive ? " active" : ""}`}
-                    onClick={() => onOpenConversation(conversation.id)}
-                    aria-current={isActive ? "true" : undefined}
                   >
-                    <span className="recent-item-main">
-                      <span className="recent-item-title">{preview}</span>
-                      <span className="recent-item-time">
-                        {formatConversationTime(conversation.updatedAt)}
-                      </span>
-                    </span>
-                  </button>
+                    {editingId === conversation.id ? (
+                      <form
+                        className="recent-edit-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          submitRename(conversation.id);
+                        }}
+                      >
+                        <input
+                          value={draftTitle}
+                          onChange={(event) => setDraftTitle(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") {
+                              setEditingId(null);
+                              setDraftTitle("");
+                            }
+                          }}
+                          aria-label="Rename chat"
+                          autoFocus
+                        />
+                        <button type="submit" aria-label="Save chat name">
+                          <CheckIcon />
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="recent-item-open"
+                          onClick={() => onOpenConversation(conversation.id)}
+                          aria-current={isActive ? "true" : undefined}
+                        >
+                          <span className="recent-item-main">
+                            <span className="recent-item-title">{preview}</span>
+                            <span className="recent-item-time">
+                              {formatConversationTime(conversation.updatedAt)}
+                            </span>
+                          </span>
+                        </button>
+                        <span className="recent-actions">
+                          <button
+                            type="button"
+                            onClick={() => startRename(conversation, preview)}
+                            aria-label={`Rename chat: ${preview}`}
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteConversation(conversation.id)}
+                            aria-label={`Delete chat: ${preview}`}
+                          >
+                            <TrashIcon />
+                          </button>
+                        </span>
+                      </>
+                    )}
+                  </div>
                 );
               })
             )}

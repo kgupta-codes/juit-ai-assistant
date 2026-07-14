@@ -1,5 +1,4 @@
-import { getDomain, sourceKey } from "../lib/conversations";
-import { DocumentIcon } from "./icons";
+import { getDomain, getFaviconUrl, formatSourceTitle, sourceKey } from "../lib/conversations";
 
 export default function SourceList({ sources }) {
   if (!sources?.length) {
@@ -12,14 +11,22 @@ export default function SourceList({ sources }) {
       <div className="source-strip">
         {sources.map((source, index) => {
           const url = source.url || source.canonical_url;
-          const title = source.title || "JUIT source";
+          const title = formatSourceTitle(source);
           const domain = url ? getDomain(url) : "juit.ac.in";
+          const faviconUrl = url ? getFaviconUrl(url) : "/favicon.svg";
 
           const sourceContent = (
             <>
               <span className="source-index">{index + 1}</span>
-              <span className="source-icon" aria-hidden="true">
-                <DocumentIcon />
+              <span className="source-favicon" aria-hidden="true">
+                <img
+                  src={faviconUrl}
+                  alt=""
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
               </span>
               <span className="source-text">
                 <span className="source-title">{title}</span>
@@ -36,7 +43,13 @@ export default function SourceList({ sources }) {
           return (
             <article className="source-chip" key={sourceKey(source, index)}>
               {url ? (
-                <a href={url} target="_blank" rel="noreferrer" title={url}>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`${title} - ${url}`}
+                  aria-label={`Open source ${index + 1}: ${title}`}
+                >
                   {sourceContent}
                 </a>
               ) : (

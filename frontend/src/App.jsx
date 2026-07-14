@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import Composer from "./components/Composer";
 import ConversationList from "./components/ConversationList";
@@ -70,6 +70,7 @@ function App() {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const activeRequestRef = useRef(0);
+  const abortControllerRef = useRef(null);
   const streamTimerRef = useRef(null);
 
   const activeConversation = useMemo(
@@ -86,6 +87,14 @@ function App() {
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, maxStoredConversations);
   const hasMessages = messages.length > 0;
+
+  const persistConversation = useCallback((conversationId, updater) => {
+    setConversations((currentConversations) =>
+      currentConversations.map((conversation) =>
+        conversation.id === conversationId ? updater(conversation) : conversation,
+      ),
+    );
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = isDarkMode ? "dark" : "light";
@@ -140,22 +149,32 @@ function App() {
     });
   };
 
-  const cancelStream = () => {
+  const cancelStream = useCallback(() => {
     if (streamTimerRef.current) {
       clearTimeout(streamTimerRef.current);
       streamTimerRef.current = null;
     }
-  };
+  }, []);
 
-  const persistConversation = (conversationId, updater) => {
-    setConversations((currentConversations) =>
-      currentConversations.map((conversation) =>
-        conversation.id === conversationId ? updater(conversation) : conversation,
-      ),
-    );
-  };
+  const stopGenerating = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    activeRequestRef.current = 0;
+    cancelStream();
+    setIsLoading(false);
 
-  const streamAssistantReply = (conversationId, answer, sources) => {
+    if (activeConversationId) {
+      persistConversation(activeConversationId, (conversation) => ({
+        ...conversation,
+        messages: conversation.messages.map((message) =>
+          message.isStreaming ? { ...message, isStreaming: false } : message,
+        ),
+        updatedAt: timestamp(),
+      }));
+    }
+  }, [activeConversationId, cancelStream, persistConversation]);
+
+  const streamAssistantReply = useCallback((conversationId, answer, sources) => {
     cancelStream();
 
     const fullText = answer || "I could not find that information in the JUIT knowledge base.";
@@ -173,6 +192,7 @@ function App() {
           content: "",
           sources,
           isStreaming: true,
+          createdAt: timestamp(),
         },
       ],
       updatedAt: timestamp(),
@@ -207,7 +227,7 @@ function App() {
     };
 
     streamTimerRef.current = window.setTimeout(tick, 180);
-  };
+  }, [cancelStream, persistConversation]);
 
   const startNewChat = () => {
     if (activeConversation && activeConversation.messages.length === 0 && !query.trim()) {
@@ -233,7 +253,7 @@ function App() {
     focusComposer();
   };
 
-  const askQuestion = async (overrideQuery = query) => {
+  const askQuestion = async (overrideQuery = query, options = {}) => {
     const trimmedQuery = overrideQuery.trim();
 
     if (!trimmedQuery || isLoading) {
@@ -247,22 +267,33 @@ function App() {
       role: "user",
       content: trimmedQuery,
       sources: [],
+      createdAt: timestamp(),
     };
-    const conversationId = activeConversation?.id || `conv-${requestId}`;
-    const currentConversation = activeConversation;
+    const conversationId = options.conversationId || activeConversation?.id || `conv-${requestId}`;
+    const currentConversation =
+      conversations.find((conversation) => conversation.id === conversationId) ||
+      activeConversation;
+    const shouldAppendUser = options.appendUser !== false;
 
-    if (!currentConversation || currentConversation.messages.length === 0) {
+    if (options.replaceFromIndex !== undefined) {
+      persistConversation(conversationId, (conversation) => ({
+        ...conversation,
+        messages: conversation.messages.slice(0, options.replaceFromIndex),
+        updatedAt: timestamp(),
+      }));
+      setActiveConversationId(conversationId);
+    } else if (!currentConversation || currentConversation.messages.length === 0) {
       const nextConversation = currentConversation
         ? {
             ...currentConversation,
             title: summarizeConversationTitle(trimmedQuery),
-            messages: [userMessage],
+            messages: shouldAppendUser ? [userMessage] : currentConversation.messages,
             updatedAt: timestamp(),
           }
         : {
             id: conversationId,
             title: summarizeConversationTitle(trimmedQuery),
-            messages: [userMessage],
+            messages: shouldAppendUser ? [userMessage] : [],
             updatedAt: timestamp(),
           };
 
@@ -280,7 +311,9 @@ function App() {
           conversation.title === "New chat"
             ? summarizeConversationTitle(trimmedQuery)
             : conversation.title,
-        messages: [...conversation.messages, userMessage],
+        messages: shouldAppendUser
+          ? [...conversation.messages, userMessage]
+          : conversation.messages,
         updatedAt: timestamp(),
       }));
     }
@@ -289,6 +322,8 @@ function App() {
     setError("");
     setIsLoading(true);
     setIsSidebarOpen(false);
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
 
     try {
       const response = await fetch(`${API_BASE_URL}/chat`, {
@@ -296,7 +331,8 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query: trimmedQuery }),
+        body: JSON.stringify({ query: trimmedQuery, session_id: conversationId }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
@@ -315,6 +351,10 @@ function App() {
         Array.isArray(data.sources) ? data.sources : [],
       );
     } catch (requestError) {
+      if (requestError.name === "AbortError") {
+        return;
+      }
+
       if (activeRequestRef.current !== requestId) {
         return;
       }
@@ -336,12 +376,17 @@ function App() {
               "I could not reach the JUIT AI service. Please check that the backend is running and try again.",
             sources: [],
             isError: true,
+            createdAt: timestamp(),
           },
         ],
         updatedAt: timestamp(),
       }));
 
       console.error(requestError);
+    } finally {
+      if (activeRequestRef.current === requestId) {
+        abortControllerRef.current = null;
+      }
     }
   };
 
@@ -363,6 +408,67 @@ function App() {
     focusComposer();
   };
 
+  const copyMessage = async (message) => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+    } catch {
+      setError("I could not copy the response. Please select the text manually.");
+    }
+  };
+
+  const regenerateMessage = (messageId) => {
+    const conversation = activeConversation;
+    const assistantIndex = conversation?.messages.findIndex(
+      (message) => message.id === messageId,
+    );
+
+    if (!conversation || assistantIndex <= 0) {
+      return;
+    }
+
+    const previousUser = [...conversation.messages]
+      .slice(0, assistantIndex)
+      .reverse()
+      .find((message) => message.role === "user");
+
+    if (!previousUser) {
+      return;
+    }
+
+    askQuestion(previousUser.content, {
+      appendUser: false,
+      conversationId: conversation.id,
+      replaceFromIndex: assistantIndex,
+    });
+  };
+
+  const renameConversation = (conversationId, title) => {
+    persistConversation(conversationId, (conversation) => ({
+      ...conversation,
+      title,
+      updatedAt: timestamp(),
+    }));
+  };
+
+  const deleteConversation = (conversationId) => {
+    setConversations((currentConversations) => {
+      const nextConversations = currentConversations.filter(
+        (conversation) => conversation.id !== conversationId,
+      );
+
+      if (nextConversations.length > 0) {
+        if (conversationId === activeConversationId) {
+          setActiveConversationId(nextConversations[0].id);
+        }
+        return nextConversations;
+      }
+
+      const draftConversation = createConversation();
+      setActiveConversationId(draftConversation.id);
+      return [draftConversation];
+    });
+  };
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -371,8 +477,10 @@ function App() {
         isDarkMode={isDarkMode}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onDeleteConversation={deleteConversation}
         onNewChat={startNewChat}
         onOpenConversation={openConversation}
+        onRenameConversation={renameConversation}
         onToggleTheme={() => setIsDarkMode((current) => !current)}
       />
 
@@ -396,6 +504,9 @@ function App() {
             isLoading={isLoading}
             messages={messages}
             messagesEndRef={messagesEndRef}
+            onCopyMessage={copyMessage}
+            onRegenerateMessage={regenerateMessage}
+            onStopGenerating={stopGenerating}
           />
 
           <Composer
@@ -403,6 +514,7 @@ function App() {
             error={error}
             onChange={setQuery}
             onKeyDown={handleKeyDown}
+            onStop={stopGenerating}
             onSubmit={askQuestion}
             query={query}
             textareaRef={textareaRef}

@@ -1,11 +1,25 @@
 import MessageBubble from "./MessageBubble";
 import { SparkIcon } from "./icons";
 
-export default function ConversationList({ isLoading, messages, messagesEndRef }) {
+export default function ConversationList({
+  isLoading,
+  messages,
+  messagesEndRef,
+  onCopyMessage,
+  onRegenerateMessage,
+  onStopGenerating,
+}) {
   return (
-    <div className="conversation-list" aria-live="polite">
+    <div className="conversation-list" aria-live="polite" aria-busy={isLoading}>
       {messages.map((message) => (
-        <MessageBubble key={message.id} message={message} />
+        <MessageBubble
+          key={message.id}
+          isLoading={isLoading}
+          message={message}
+          onCopy={onCopyMessage}
+          onRegenerate={onRegenerateMessage}
+          onStop={onStopGenerating}
+        />
       ))}
 
       {isLoading && (

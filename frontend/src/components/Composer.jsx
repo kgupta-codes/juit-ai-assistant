@@ -1,10 +1,11 @@
-import { SendIcon } from "./icons";
+import { SendIcon, StopIcon } from "./icons";
 
 export default function Composer({
   disabled,
   error,
   onChange,
   onKeyDown,
+  onStop,
   onSubmit,
   query,
   textareaRef,
@@ -30,12 +31,26 @@ export default function Composer({
           placeholder="Ask anything about JUIT..."
           disabled={disabled}
           rows={1}
+          aria-describedby={error ? "composer-error" : "composer-hint"}
         />
-        <button type="submit" disabled={disabled || !query.trim()} aria-label="Send message">
-          <SendIcon />
-        </button>
+        {disabled ? (
+          <button type="button" onClick={onStop} aria-label="Stop generating">
+            <StopIcon />
+          </button>
+        ) : (
+          <button type="submit" disabled={!query.trim()} aria-label="Send message">
+            <SendIcon />
+          </button>
+        )}
       </form>
-      {error && <p className="form-error">{error}</p>}
+      <p id="composer-hint" className="composer-hint">
+        Press Enter to send. Use Shift+Enter for a new line.
+      </p>
+      {error && (
+        <p id="composer-error" className="form-error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

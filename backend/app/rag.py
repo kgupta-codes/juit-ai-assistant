@@ -8,7 +8,11 @@ from backend.app.structured_answers import club_answer
 from backend.app.structured_answers import committee_answer
 from backend.app.structured_answers import placement_answer
 from backend.app.structured_answers import research_center_answer
+from backend.app.nlu import ConversationState, department_matches, process_query, update_state_from_query
 import re
+
+UNAVAILABLE_ANSWER = "I could not confidently find this information on the official JUIT website."
+MIN_CONFIDENCE_SCORE = 1.0
 
 
 def extract_hod(context):
@@ -94,32 +98,94 @@ def build_context(documents, question="", per_document_limit=1500, total_limit=8
     return context
 
 
-def ask_juit(question: str):
+def _retrieval_confidence(results: dict) -> float:
+    scores = results.get("scores", [[]])[0]
+    if scores:
+        return float(scores[0])
 
-    results = search(question, n_results=2)
+    distances = results.get("distances", [[]])[0]
+    if distances and distances[0] is not None:
+        return 1.0 / (1.0 + float(distances[0]))
+
+    return 0.0
+
+
+def _has_entity_support(documents: list[str], sources: list[dict], department: str | None) -> bool:
+    if not department:
+        return True
+
+    return any(
+        department_matches(source, document, department)
+        for document, source in zip(documents, sources)
+    )
+
+
+def _source_title(source: dict) -> str:
+    return str(source.get("title") or source.get("url") or "official JUIT source")
+
+
+def ask_juit(
+    question: str,
+    history=None,
+    state: ConversationState | None = None,
+):
+    processed = process_query(question, state)
+    if state is not None:
+        update_state_from_query(state, processed)
+
+    results = search(
+        processed.standalone,
+        n_results=5
+    )
 
     documents = results["documents"][0]
     sources = results["metadatas"][0]
+
     question_text = question.lower()
 
     # Prevent huge prompts that can make Qwen hang while preserving each source.
-    context = build_context(documents, question)
+    context = build_context(documents, processed.standalone)
+
+    confidence = _retrieval_confidence(results)
+    department = processed.entities.primary_department
+    intent_query = processed.standalone
+
+    if not documents or confidence < MIN_CONFIDENCE_SCORE:
+        return {
+            "answer": UNAVAILABLE_ANSWER,
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
+        }
+
+    if not _has_entity_support(documents, sources, department):
+        return {
+            "answer": UNAVAILABLE_ANSWER,
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
+        }
 
     # Special handling for HOD questions
-    if "hod" in question.lower() or "head of department" in question.lower():
+    if processed.entities.primary_role == "Head of Department":
 
         hod = extract_hod(context)
 
         if hod:
+            department_label = department or _source_title(sources[0])
             return {
-                "answer": f"The HOD of Civil Engineering is {hod}.",
-                "sources": sources
+                "answer": f"The HOD of {department_label} is {hod}.",
+                "sources": sources,
+                "confidence": confidence,
+                "rewritten_query": processed.standalone,
             }
 
-    if is_student_club_query(question):
+    if is_student_club_query(intent_query):
         return {
             "answer": club_answer(),
-            "sources": sources
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
         }
 
     if "cesedm" in question_text:
@@ -128,28 +194,36 @@ def ask_juit(question: str):
                 "CESEDM is the Centre for Structural Engineering and "
                 "Disaster Management at JUIT."
             ),
-            "sources": sources
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
         }
 
-    if is_research_center_query(question):
+    if is_research_center_query(intent_query):
         return {
             "answer": research_center_answer(),
-            "sources": sources
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
         }
 
-    if is_committee_query(question):
+    if is_committee_query(intent_query):
         return {
             "answer": committee_answer(),
-            "sources": sources
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
         }
 
-    if is_placement_query(question):
+    if is_placement_query(intent_query):
         answer = placement_answer(documents)
 
         if answer:
             return {
                 "answer": answer,
-                "sources": sources
+                "sources": sources,
+                "confidence": confidence,
+                "rewritten_query": processed.standalone,
             }
 
     prompt = f"""
@@ -163,7 +237,7 @@ Rules:
 - Do not invent facts.
 - Do not use outside knowledge.
 - If answer is not present, reply exactly:
-I could not find that information in the JUIT knowledge base.
+{UNAVAILABLE_ANSWER}
 
 Context:
 {context}
@@ -179,12 +253,16 @@ Answer:
 
         return {
             "answer": answer,
-            "sources": sources
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
         }
 
-    except Exception as e:
+    except Exception:
 
         return {
-            "answer": f"Error generating answer: {str(e)}",
-            "sources": sources
+            "answer": UNAVAILABLE_ANSWER,
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
         }

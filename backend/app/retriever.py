@@ -1,13 +1,21 @@
 import re
+import math
+from collections import Counter
 from pathlib import Path
 
 import chromadb
 from chromadb.utils import embedding_functions
 
+from backend.app.nlu import department_matches, process_query, role_matches
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 CHROMA_DIR = BASE_DIR / "chroma_db"
 
 CHROMA_CANDIDATES = 60
+KEYWORD_CANDIDATES = 40
+HYBRID_KEYWORD_WEIGHT = 0.25
+ENTITY_MISMATCH_PENALTY = 4.0
+ENTITY_MATCH_BOOST = 1.25
 INSTITUTION_TERMS = {
     "juit",
     "jaypee",
@@ -657,12 +665,20 @@ def _faculty_boost(query: str, title: str, document: str, metadata: dict) -> flo
 
     return boost
 
-def _rank_candidate(query: str, document: str, metadata: dict, distance) -> float:
+def _rank_candidate(
+    query: str,
+    document: str,
+    metadata: dict,
+    distance,
+    keyword_score: float = 0.0,
+) -> float:
     title = metadata.get("title", "")
     query_tokens = _tokens(query)
     phrases = _exact_phrases(query)
+    processed = process_query(query)
 
     score = _semantic_score(distance)
+    score += HYBRID_KEYWORD_WEIGHT * keyword_score
     score += _title_boost(query_tokens, title)
     score += _exact_phrase_boost(phrases, title, document)
     score += _committee_boost(query_tokens, title, document, metadata)
@@ -672,25 +688,55 @@ def _rank_candidate(query: str, document: str, metadata: dict, distance) -> floa
     score += _student_club_boost(query_tokens, document, metadata)
     score += _placement_boost(query_tokens, document, metadata)
     score += _hostel_boost(query_tokens, document, metadata)
+
+    department = processed.entities.primary_department
+    role = processed.entities.primary_role
+
+    if department:
+        if department_matches(metadata, document, department):
+            score += ENTITY_MATCH_BOOST
+        else:
+            score -= ENTITY_MISMATCH_PENALTY
+
+    if role:
+        if role_matches(metadata, document, role):
+            score += ENTITY_MATCH_BOOST
+        else:
+            score -= ENTITY_MISMATCH_PENALTY / 2
+
     return score
 
 
 def _dedupe_key(metadata: dict) -> str:
     title = _normalize_text(metadata.get("title", ""))
+    chunk_id = metadata.get("chunk_id")
     chunk_index = metadata.get("chunk_index", 0)
 
+    if chunk_id:
+        return str(chunk_id)
+
     return f"{title}:{chunk_index}"
+
+
+def _candidate_key(metadata: dict, index: int) -> str:
+    key = _dedupe_key(metadata)
+    if key and key != ":0":
+        return key
+    return f"candidate:{index}"
+
 
 def _rerank(results: dict, query: str, n_results: int) -> dict:
     documents = results.get("documents", [[]])[0]
     metadatas = results.get("metadatas", [[]])[0]
     distances = results.get("distances", [[]])[0]
+    keyword_scores = results.get("keyword_scores", [[]])[0]
 
     candidates = []
 
     for index, document in enumerate(documents):
         metadata = metadatas[index] if index < len(metadatas) else {}
         distance = distances[index] if index < len(distances) else None
+        keyword_score = keyword_scores[index] if index < len(keyword_scores) else 0.0
 
         candidates.append(
             {
@@ -698,7 +744,8 @@ def _rerank(results: dict, query: str, n_results: int) -> dict:
                 "document": document,
                 "metadata": metadata,
                 "distance": distance,
-                "score": _rank_candidate(query, document, metadata, distance),
+                "keyword_score": keyword_score,
+                "score": _rank_candidate(query, document, metadata, distance, keyword_score),
             }
         )
 
@@ -725,12 +772,108 @@ def _rerank(results: dict, query: str, n_results: int) -> dict:
         "documents": [[candidate["document"] for candidate in deduped]],
         "metadatas": [[candidate["metadata"] for candidate in deduped]],
         "distances": [[candidate["distance"] for candidate in deduped]],
+        "scores": [[candidate["score"] for candidate in deduped]],
+        "keyword_scores": [[candidate["keyword_score"] for candidate in deduped]],
+    }
+
+
+def _keyword_candidates(query: str, limit: int = KEYWORD_CANDIDATES) -> dict:
+    query_terms = [
+        token
+        for token in _tokens(query)
+        if len(token) > 1 and token not in INSTITUTION_TERMS
+    ]
+
+    if not query_terms:
+        return {"documents": [[]], "metadatas": [[]], "distances": [[]], "keyword_scores": [[]]}
+
+    all_results = collection.get(include=["documents", "metadatas"])
+    documents = all_results.get("documents", [])
+    metadatas = all_results.get("metadatas", [])
+
+    if not documents:
+        return {"documents": [[]], "metadatas": [[]], "distances": [[]], "keyword_scores": [[]]}
+
+    doc_tokens = [_tokens(f"{metadatas[index].get('title', '')} {document}") for index, document in enumerate(documents)]
+    doc_count = len(documents)
+    document_frequency = Counter(
+        term
+        for terms in doc_tokens
+        for term in set(terms)
+        if term in query_terms
+    )
+
+    scored = []
+    for index, terms in enumerate(doc_tokens):
+        if not terms:
+            continue
+
+        term_counts = Counter(terms)
+        score = 0.0
+        for term in query_terms:
+            frequency = term_counts.get(term, 0)
+            if not frequency:
+                continue
+
+            idf = math.log(1 + (doc_count - document_frequency[term] + 0.5) / (document_frequency[term] + 0.5))
+            score += idf * (frequency / (frequency + 1.2))
+
+        if score > 0:
+            scored.append((score, index))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    selected = scored[:limit]
+
+    return {
+        "documents": [[documents[index] for _score, index in selected]],
+        "metadatas": [[metadatas[index] for _score, index in selected]],
+        "distances": [[None for _score, _index in selected]],
+        "keyword_scores": [[score for score, _index in selected]],
+    }
+
+
+def _merge_results(dense_results: dict, keyword_results: dict) -> dict:
+    merged = {}
+
+    for source in (dense_results, keyword_results):
+        documents = source.get("documents", [[]])[0]
+        metadatas = source.get("metadatas", [[]])[0]
+        distances = source.get("distances", [[]])[0]
+        keyword_scores = source.get("keyword_scores", [[]])[0]
+
+        for index, document in enumerate(documents):
+            metadata = metadatas[index] if index < len(metadatas) else {}
+            key = _candidate_key(metadata, len(merged))
+            distance = distances[index] if index < len(distances) else None
+            keyword_score = keyword_scores[index] if index < len(keyword_scores) else 0.0
+
+            if key not in merged:
+                merged[key] = {
+                    "document": document,
+                    "metadata": metadata,
+                    "distance": distance,
+                    "keyword_score": keyword_score,
+                }
+                continue
+
+            current = merged[key]
+            if current["distance"] is None or (distance is not None and distance < current["distance"]):
+                current["distance"] = distance
+            current["keyword_score"] = max(current["keyword_score"], keyword_score)
+
+    candidates = list(merged.values())
+    return {
+        "documents": [[candidate["document"] for candidate in candidates]],
+        "metadatas": [[candidate["metadata"] for candidate in candidates]],
+        "distances": [[candidate["distance"] for candidate in candidates]],
+        "keyword_scores": [[candidate["keyword_score"] for candidate in candidates]],
     }
 
 
 def search(query: str, n_results: int = 20):
-    normalized_query = normalize_query(query)
-    expanded_query = expand_query(normalized_query)
+    processed = process_query(query)
+    normalized_query = normalize_query(processed.standalone)
+    expanded_query = f"{processed.expanded} {expand_query(normalized_query)}"
 
     exact_results = collection.get(
         where={"title": query.strip()}
@@ -743,7 +886,7 @@ def search(query: str, n_results: int = 20):
             "distances": [[0.0] * len(exact_results["documents"][:n_results])],
         }
 
-    results = collection.query(
+    dense_results = collection.query(
         query_texts=[expanded_query],
         n_results=CHROMA_CANDIDATES,
         include=[
@@ -752,5 +895,7 @@ def search(query: str, n_results: int = 20):
             "distances",
         ],
     )
+    keyword_results = _keyword_candidates(expanded_query)
+    results = _merge_results(dense_results, keyword_results)
 
     return _rerank(results, expanded_query, n_results)

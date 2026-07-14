@@ -22,8 +22,11 @@ def generate_answer(prompt: str):
             "stream": False,
             "think": False,
             "options": {
+                "temperature": 0,
+                "top_p": 0.1,
                 "num_ctx": 2048,
-                "num_predict": 250
+                "num_predict": 128,
+                "repeat_penalty": 1.05
             }
         },
         timeout=180
@@ -35,7 +38,7 @@ def generate_answer(prompt: str):
 
     answer = data["response"]
 
-    if "</think>" in answer:
-        answer = answer.split("</think>")[-1].strip()
+    if "<tool_call>" in answer:
+        answer = answer.split("<tool_call>")[-1].strip()
 
     return answer

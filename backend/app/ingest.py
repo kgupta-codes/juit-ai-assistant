@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -7,6 +8,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 import chromadb
 from chromadb.utils import embedding_functions
+
+LOGGER = logging.getLogger(__name__)
 
 # -----------------------------
 # Paths
@@ -289,7 +292,7 @@ def ingest_file(file_path: Path, collection, ingested_at: str) -> int:
     content = clean_text(data.get("content", ""))
 
     if not canonical_url or not title or not content:
-        print(f"[SKIP] Missing required fields: {file_path.name}")
+        LOGGER.info("Skipping page with missing required fields: %s", file_path.name)
         return 0
 
     content_hash = sha256_text(content)
@@ -300,7 +303,7 @@ def ingest_file(file_path: Path, collection, ingested_at: str) -> int:
     chunks = build_chunks(content)
 
     if not chunks:
-        print(f"[SKIP] No usable chunks: {file_path.name}")
+        LOGGER.info("Skipping page with no usable chunks: %s", file_path.name)
         return 0
 
     delete_existing_page_chunks(collection, raw_url, canonical_url)
@@ -350,16 +353,17 @@ def ingest_file(file_path: Path, collection, ingested_at: str) -> int:
         metadatas=metadatas
     )
 
-    print(f"[OK] {file_path.name} -> {len(documents)} chunks")
+    LOGGER.info("Upserted %s chunks from %s", len(documents), file_path.name)
     return len(documents)
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     collection = load_collection()
     files = sorted(PAGES_DIR.glob("*.json"))
     ingested_at = datetime.now(timezone.utc).isoformat()
 
-    print(f"[INFO] Found {len(files)} files")
+    LOGGER.info("Found %s files", len(files))
 
     total_chunks = 0
     failed_files = 0
@@ -367,13 +371,13 @@ def main():
     for file_path in files:
         try:
             total_chunks += ingest_file(file_path, collection, ingested_at)
-        except Exception as e:
+        except Exception:
             failed_files += 1
-            print(f"[ERROR] {file_path.name}: {e}")
+            LOGGER.exception("Failed to ingest %s", file_path.name)
 
-    print(f"\n[INFO] Ingestion complete")
-    print(f"[INFO] Chunks upserted: {total_chunks}")
-    print(f"[INFO] Failed files: {failed_files}")
+    LOGGER.info("Ingestion complete")
+    LOGGER.info("Chunks upserted: %s", total_chunks)
+    LOGGER.info("Failed files: %s", failed_files)
 
 
 if __name__ == "__main__":
