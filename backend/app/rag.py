@@ -247,7 +247,6 @@ Question:
 
 Answer:
 """
-
     try:
         answer = generate_answer(prompt)
 
@@ -258,7 +257,7 @@ Answer:
             "rewritten_query": processed.standalone,
         }
 
-     except Exception as e:
+    except Exception as e:
         import traceback
 
         return {
@@ -267,4 +266,4 @@ Answer:
             "sources": sources,
             "confidence": confidence,
             "rewritten_query": processed.standalone,
-    }
+        }
