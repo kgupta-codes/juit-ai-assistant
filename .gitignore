@@ -4,7 +4,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-chroma_db/
+# chroma_db/
 uploads/
 .env
 .env.*
