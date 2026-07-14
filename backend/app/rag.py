@@ -258,13 +258,13 @@ Answer:
             "rewritten_query": processed.standalone,
         }
 
-    except Exception as e:
-    import traceback
+     except Exception as e:
+        import traceback
 
-    return {
-        "answer": str(e),
-        "traceback": traceback.format_exc(),
-        "sources": sources,
-        "confidence": confidence,
-        "rewritten_query": processed.standalone,
+        return {
+            "answer": str(e),
+            "traceback": traceback.format_exc(),
+            "sources": sources,
+            "confidence": confidence,
+            "rewritten_query": processed.standalone,
     }
