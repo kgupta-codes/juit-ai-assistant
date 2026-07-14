@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend ./backend
 COPY data ./data
+COPY chroma_db ./chroma_db
 
 EXPOSE 8000
 
