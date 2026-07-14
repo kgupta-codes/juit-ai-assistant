@@ -258,11 +258,13 @@ Answer:
             "rewritten_query": processed.standalone,
         }
 
-    except Exception:
+    except Exception as e:
+    import traceback
 
-        return {
-            "answer": UNAVAILABLE_ANSWER,
-            "sources": sources,
-            "confidence": confidence,
-            "rewritten_query": processed.standalone,
-        }
+    return {
+        "answer": str(e),
+        "traceback": traceback.format_exc(),
+        "sources": sources,
+        "confidence": confidence,
+        "rewritten_query": processed.standalone,
+    }
