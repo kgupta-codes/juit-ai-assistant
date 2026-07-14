@@ -1,44 +1,30 @@
 import os
-import requests
+from dotenv import load_dotenv
 
-OLLAMA_URL = os.getenv(
-    "OLLAMA_URL",
-    "http://localhost:11434/api/generate"
+load_dotenv()
+
+from groq import Groq
+MODEL = os.getenv(
+    "GROQ_MODEL",
+    "llama-3.3-70b-versatile"
 )
 
-OLLAMA_MODEL = os.getenv(
-    "OLLAMA_MODEL",
-    "qwen3:1.7b"
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
 
 def generate_answer(prompt: str):
 
-    response = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "think": False,
-            "options": {
-                "temperature": 0,
-                "top_p": 0.1,
-                "num_ctx": 2048,
-                "num_predict": 128,
-                "repeat_penalty": 1.05
+    response = client.chat.completions.create(
+        model=MODEL,
+        temperature=0,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
             }
-        },
-        timeout=180
+        ]
     )
 
-    response.raise_for_status()
-
-    data = response.json()
-
-    answer = data["response"]
-
-    if "<tool_call>" in answer:
-        answer = answer.split("<tool_call>")[-1].strip()
-
-    return answer
+    return response.choices[0].message.content.strip()
