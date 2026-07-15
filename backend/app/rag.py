@@ -96,6 +96,9 @@ def build_context(documents, question="", per_document_limit=1500, total_limit=8
         context = context[:total_limit]
 
     return context
+
+
+def _retrieval_confidence(results: dict) -> float:
     scores = results.get("scores", [[]])[0]
     if scores:
         return float(scores[0])
