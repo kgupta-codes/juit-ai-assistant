@@ -84,7 +84,7 @@ def _btech_fee_excerpt(document):
 def build_context(documents, question="", per_document_limit=1500, total_limit=8000):
     clipped_documents = []
 
-    for document in documents[:2]:
+    for document in documents[:4]:
         if _is_btech_fee_question(question):
             document = _btech_fee_excerpt(document)
 
@@ -96,9 +96,6 @@ def build_context(documents, question="", per_document_limit=1500, total_limit=8
         context = context[:total_limit]
 
     return context
-
-
-def _retrieval_confidence(results: dict) -> float:
     scores = results.get("scores", [[]])[0]
     if scores:
         return float(scores[0])
@@ -146,7 +143,7 @@ def ask_juit(
         processed.standalone,
         n_results=5
     )
-    
+
     documents = results["documents"][0]
     sources = results["metadatas"][0]
 
