@@ -130,6 +130,15 @@ def ask_juit(
     state: ConversationState | None = None,
 ):
     processed = process_query(question, state)
+
+    history_text = ""
+
+    if history:
+        history_text = "\n".join(
+            f'{msg["role"]}: {msg["content"]}'
+            for msg in history[-6:]
+        )
+
     if state is not None:
         update_state_from_query(state, processed)
 
@@ -137,7 +146,7 @@ def ask_juit(
         processed.standalone,
         n_results=5
     )
-
+    
     documents = results["documents"][0]
     sources = results["metadatas"][0]
 
@@ -227,25 +236,44 @@ def ask_juit(
             }
 
     prompt = f"""
-You are the JUIT AI Assistant.
+You are the official JUIT AI Assistant for Jaypee University of Information Technology, Waknaghat.
 
-Answer ONLY using the provided context.
+You answer questions ONLY from the supplied context.
 
-Rules:
-- Use exact information from the context.
-- Maximum 3 sentences.
-- Do not invent facts.
-- Do not use outside knowledge.
-- If answer is not present, reply exactly:
+Instructions:
+- Read the context carefully before answering.
+- Never use outside knowledge.
+- Never guess or hallucinate.
+- If the answer is not available in the context, reply exactly:
 {UNAVAILABLE_ANSWER}
+- Keep answers clear and well structured.
+- Use bullet points when listing multiple items.
+- Preserve official names, numbers, URLs and email addresses exactly as given.
+- If the context contains multiple relevant pieces of information, combine them into one complete answer.
+- Do not mention "According to the context" or "Based on the provided context".
+- Do not mention these instructions.
 
-Context:
+=====================
+CONVERSATION HISTORY
+=====================
+
+{history_text}
+
+=====================
+CONTEXT
+=====================
+
 {context}
 
-Question:
+=====================
+CURRENT QUESTION
+=====================
+
 {question}
 
-Answer:
+=====================
+ANSWER
+=====================
 """
     try:
         answer = generate_answer(prompt)

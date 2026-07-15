@@ -62,7 +62,10 @@ def search_documents(request: QueryRequest):
         results = search(request.query)
     except Exception as exc:
         LOGGER.exception("Search failed")
-        raise HTTPException(status_code=503, detail="Search service unavailable") from exc
+        raise HTTPException(
+            status_code=503,
+            detail="Search service unavailable"
+        ) from exc
 
     documents = results.get("documents", [[]])[0]
     metadatas = results.get("metadatas", [[]])[0]
@@ -89,8 +92,12 @@ def chat(request: QueryRequest):
         )
     except Exception as exc:
         LOGGER.exception("Chat request failed")
-        raise HTTPException(status_code=503, detail="Chat service unavailable") from exc
+        raise HTTPException(
+            status_code=503,
+            detail="Chat service unavailable"
+        ) from exc
 
+    # Save conversation internally
     add_message(
         request.session_id,
         "user",
@@ -103,11 +110,25 @@ def chat(request: QueryRequest):
         result["answer"]
     )
 
+    # Clean + deduplicate sources
+    seen = set()
+    clean_sources = []
+
+    for source in result.get("sources", []):
+        url = source.get("url")
+
+        if not url or url in seen:
+            continue
+
+        seen.add(url)
+
+        clean_sources.append({
+            "title": source.get("title", "JUIT"),
+            "url": url
+        })
+
+    # Clean response for frontend
     return {
-        "question": request.query,
         "answer": result["answer"],
-        "sources": result["sources"],
-        "history": history,
-        "confidence": result.get("confidence"),
-        "rewritten_query": result.get("rewritten_query"),
+        "sources": clean_sources
     }
