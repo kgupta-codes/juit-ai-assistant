@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from backend.app.nlu import ConversationState
+from app.nlu import ConversationState
 
 # Stores conversations in memory.
 # Later we can replace this with Redis or a database.

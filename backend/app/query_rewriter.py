@@ -1,4 +1,4 @@
-from backend.app.nlu import ConversationState, process_query, update_state_from_query
+from app.nlu import ConversationState, process_query, update_state_from_query
 
 
 def rewrite_query(

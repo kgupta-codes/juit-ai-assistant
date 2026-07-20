@@ -286,10 +286,23 @@ def scrape_page(url: str):
             LOGGER.info("Skipping low-content page: %s", url)
             return
 
+        h1 = ""
+        first_h1 = main_content.find("h1")
+        if first_h1:
+            h1 = clean_text(first_h1.get_text())
+
+        headings = [
+            clean_text(h.get_text())
+            for h in main_content.find_all(["h2", "h3"])
+        ]
+
         data = {
-            "url": url,
-            "title": title,
-            "content": text
+        "url": url,
+        "title": title,
+        "h1": h1,
+        "headings": headings,
+        "content": text,
+        "html": str(main_content)
         }
 
         output_file = DATA_DIR / output_filename(url)

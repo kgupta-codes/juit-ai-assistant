@@ -1,3 +1,4 @@
+from app.reranker import rerank_candidates
 import re
 import math
 from collections import Counter
@@ -6,8 +7,7 @@ from pathlib import Path
 import chromadb
 from chromadb.utils import embedding_functions
 
-from backend.app.nlu import department_matches, process_query, role_matches
-
+from app.nlu import department_matches, process_query, role_matches
 BASE_DIR = Path(__file__).resolve().parents[2]
 CHROMA_DIR = BASE_DIR / "chroma_db"
 
@@ -667,6 +667,7 @@ def _faculty_boost(query: str, title: str, document: str, metadata: dict) -> flo
 
 def _rank_candidate(
     query: str,
+    processed,
     document: str,
     metadata: dict,
     distance,
@@ -675,7 +676,6 @@ def _rank_candidate(
     title = metadata.get("title", "")
     query_tokens = _tokens(query)
     phrases = _exact_phrases(query)
-    processed = process_query(query)
 
     score = _semantic_score(distance)
     score += HYBRID_KEYWORD_WEIGHT * keyword_score
@@ -725,7 +725,12 @@ def _candidate_key(metadata: dict, index: int) -> str:
     return f"candidate:{index}"
 
 
-def _rerank(results: dict, query: str, n_results: int) -> dict:
+def _rerank(
+    results: dict,
+    query: str,
+    processed,
+    n_results: int,
+) -> dict:
     documents = results.get("documents", [[]])[0]
     metadatas = results.get("metadatas", [[]])[0]
     distances = results.get("distances", [[]])[0]
@@ -745,7 +750,7 @@ def _rerank(results: dict, query: str, n_results: int) -> dict:
                 "metadata": metadata,
                 "distance": distance,
                 "keyword_score": keyword_score,
-                "score": _rank_candidate(query, document, metadata, distance, keyword_score),
+                "score": _rank_candidate(query, processed, document, metadata, distance, keyword_score),
             }
         )
 
@@ -898,4 +903,9 @@ def search(query: str, n_results: int = 20):
     keyword_results = _keyword_candidates(expanded_query)
     results = _merge_results(dense_results, keyword_results)
 
-    return _rerank(results, expanded_query, n_results)
+    return _rerank(
+    results=results,
+    query=expanded_query,
+    processed=processed,
+    n_results=n_results,
+)

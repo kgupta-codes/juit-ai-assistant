@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass, field
 
-from backend.app.query_config import (
+from app.query_config import (
     DEPARTMENT_ALIASES,
     GENERAL_ALIASES,
     PROGRAM_ALIASES,

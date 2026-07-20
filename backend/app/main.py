@@ -3,13 +3,13 @@ import logging
 
 from typing import Optional
 
-from backend.app.memory import add_message, get_history, get_state
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
-from backend.app.retriever import search
-from backend.app.rag import ask_juit
+from app.memory import add_message, get_history, get_state
+from app.retriever import search
+from app.rag import ask_juit
 
 LOGGER = logging.getLogger(__name__)
 

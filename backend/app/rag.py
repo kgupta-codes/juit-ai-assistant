@@ -1,14 +1,16 @@
-from backend.app.retriever import search
-from backend.app.retriever import is_committee_query
-from backend.app.retriever import is_placement_query
-from backend.app.retriever import is_research_center_query
-from backend.app.retriever import is_student_club_query
-from backend.app.chat import generate_answer
-from backend.app.structured_answers import club_answer
-from backend.app.structured_answers import committee_answer
-from backend.app.structured_answers import placement_answer
-from backend.app.structured_answers import research_center_answer
-from backend.app.nlu import ConversationState, department_matches, process_query, update_state_from_query
+from app.citations import build_citations
+from app.context_builder import build_page_context
+from app.retriever import search
+from app.retriever import is_committee_query
+from app.retriever import is_placement_query
+from app.retriever import is_research_center_query
+from app.retriever import is_student_club_query
+from app.chat import generate_answer
+from app.structured_answers import club_answer
+from app.structured_answers import committee_answer
+from app.structured_answers import placement_answer
+from app.structured_answers import research_center_answer
+from app.nlu import ConversationState, department_matches, process_query, update_state_from_query
 import re
 
 UNAVAILABLE_ANSWER = "I could not confidently find this information on the official JUIT website."
@@ -153,7 +155,7 @@ def ask_juit(
     question_text = question.lower()
 
     # Prevent huge prompts that can make Qwen hang while preserving each source.
-    context = build_context(documents, processed.standalone)
+    context = build_page_context(results)
 
     confidence = _retrieval_confidence(results)
     department = processed.entities.primary_department
@@ -280,7 +282,7 @@ ANSWER
 
         return {
             "answer": answer,
-            "sources": sources,
+            "sources": build_citations(sources),
             "confidence": confidence,
             "rewritten_query": processed.standalone,
         }
