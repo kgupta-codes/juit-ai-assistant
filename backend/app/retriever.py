@@ -761,15 +761,26 @@ def _build_candidates(
                 "metadata": metadata,
                 "distance": distance,
                 "keyword_score": keyword_score,
-                "score": _rank_candidate(
-                    query,
-                    processed,
-                    document,
-                    metadata,
-                    distance,
-                    keyword_score,
-                ),
+                "score": 0.0,
             }
+        )
+
+    return candidates
+
+def _score_candidates(
+    candidates,
+    query,
+    processed,
+):
+    for candidate in candidates:
+
+        candidate["score"] = _rank_candidate(
+            query=query,
+            processed=processed,
+            document=candidate["document"],
+            metadata=candidate["metadata"],
+            distance=candidate["distance"],
+            keyword_score=candidate["keyword_score"],
         )
 
     return candidates
@@ -819,6 +830,12 @@ def _rerank(
         processed,
     )
 
+    candidates = _score_candidates(
+        candidates,
+        query,
+        processed,
+    )
+
     candidates.sort(
         key=lambda item: (-item["score"], item["index"])
     )
@@ -833,7 +850,9 @@ def _rerank(
         "metadatas": [[candidate["metadata"] for candidate in deduped]],
         "distances": [[candidate["distance"] for candidate in deduped]],
         "scores": [[candidate["score"] for candidate in deduped]],
-        "keyword_scores": [[candidate["keyword_score"] for candidate in deduped]],
+        "keyword_scores": [
+    [candidate["keyword_score"] for candidate in deduped]
+],
     }
 
 def _keyword_candidates(query: str, limit: int = KEYWORD_CANDIDATES) -> dict:
