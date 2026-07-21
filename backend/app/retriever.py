@@ -724,24 +724,35 @@ def _candidate_key(metadata: dict, index: int) -> str:
         return key
     return f"candidate:{index}"
 
-
-def _rerank(
-    results: dict,
-    query: str,
+def _build_candidates(
+    documents,
+    metadatas,
+    distances,
+    keyword_scores,
+    query,
     processed,
-    n_results: int,
-) -> dict:
-    documents = results.get("documents", [[]])[0]
-    metadatas = results.get("metadatas", [[]])[0]
-    distances = results.get("distances", [[]])[0]
-    keyword_scores = results.get("keyword_scores", [[]])[0]
-
+):
     candidates = []
 
     for index, document in enumerate(documents):
-        metadata = metadatas[index] if index < len(metadatas) else {}
-        distance = distances[index] if index < len(distances) else None
-        keyword_score = keyword_scores[index] if index < len(keyword_scores) else 0.0
+
+        metadata = (
+            metadatas[index]
+            if index < len(metadatas)
+            else {}
+        )
+
+        distance = (
+            distances[index]
+            if index < len(distances)
+            else None
+        )
+
+        keyword_score = (
+            keyword_scores[index]
+            if index < len(keyword_scores)
+            else 0.0
+        )
 
         candidates.append(
             {
@@ -750,16 +761,29 @@ def _rerank(
                 "metadata": metadata,
                 "distance": distance,
                 "keyword_score": keyword_score,
-                "score": _rank_candidate(query, processed, document, metadata, distance, keyword_score),
+                "score": _rank_candidate(
+                    query,
+                    processed,
+                    document,
+                    metadata,
+                    distance,
+                    keyword_score,
+                ),
             }
         )
 
-    candidates.sort(key=lambda item: (-item["score"], item["index"]))
+    return candidates
 
+def _deduplicate(
+    candidates,
+    n_results,
+):
     deduped = []
+
     seen_titles = set()
 
     for candidate in candidates:
+
         key = _dedupe_key(candidate["metadata"])
 
         if key and key in seen_titles:
@@ -773,6 +797,37 @@ def _rerank(
         if len(deduped) >= n_results:
             break
 
+    return deduped
+
+def _rerank(
+    results,
+    query,
+    processed,
+    n_results,
+):
+    documents = results.get("documents", [[]])[0]
+    metadatas = results.get("metadatas", [[]])[0]
+    distances = results.get("distances", [[]])[0]
+    keyword_scores = results.get("keyword_scores", [[]])[0]
+
+    candidates = _build_candidates(
+        documents,
+        metadatas,
+        distances,
+        keyword_scores,
+        query,
+        processed,
+    )
+
+    candidates.sort(
+        key=lambda item: (-item["score"], item["index"])
+    )
+
+    deduped = _deduplicate(
+        candidates,
+        n_results,
+    )
+
     return {
         "documents": [[candidate["document"] for candidate in deduped]],
         "metadatas": [[candidate["metadata"] for candidate in deduped]],
@@ -780,7 +835,6 @@ def _rerank(
         "scores": [[candidate["score"] for candidate in deduped]],
         "keyword_scores": [[candidate["keyword_score"] for candidate in deduped]],
     }
-
 
 def _keyword_candidates(query: str, limit: int = KEYWORD_CANDIDATES) -> dict:
     query_terms = [
